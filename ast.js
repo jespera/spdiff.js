@@ -47,9 +47,21 @@
 
 var AST = (function(){
 
-    function makeTerm(op, args) {
-        return { op: op, args: args};
+    function makeTerm(op, elems) {
+        return { op: op, elems: elems};
     }
+
+    var nextMeta = 0;
+
+    function makeMeta() {
+	var m = nextMeta;
+	nextMeta = nextMeta + 1;
+	return makeTerm("meta", [m]);
+    }
+
+    function isMeta(term) {
+	return term.op && term.op === "meta";
+    } 
 
     function equalsTerm(t1, t2) {
         if (t1.op !== t2.op) {
@@ -67,11 +79,36 @@ var AST = (function(){
         return true;
     }
 
+    // Apply substitution in 'pattern' with bindings from 'sub'
+    function applyPattern(pattern, sub) {
+	function apply(pattern) {
+	    if(isMeta(pattern)) {
+		return sub[pattern.elems[0]];
+	    }
+	    if(pattern.elems) {
+		var newArgs = pattern.elems.map(apply);
+		return makeTerm(pattern.op, newArgs);
+	    }
+	    return pattern;
+	}
+	return apply(pattern);
+    }
+
+    // Compute a substitution from meta-variables in 'pattern' such that
+    // applyPattern pattern subst = tree 
     function matches(pattern, tree) {
     }
     
     return {
         mk: makeTerm,
-        equals: equalsTerm
+        equals: equalsTerm,
+	applyPattern: applyPattern
     };
 })();
+
+var term1 = AST.mk("num", [1]);
+
+// f(<meta-1>) {meta-1 : "1"} = f(1)
+var test1 = AST.applyPattern(AST.mk("call",[AST.mk("id",["f"]), AST.mk("argList",[{op:"meta",elems:[1]}])]), {1:term1});
+var f1 = AST.mk("call", [AST.mk("id",["f"]), term1]);
+var test1res = AST.equals(test1, f1)
