@@ -111,56 +111,52 @@ var AST = (function(){
 	return apply(pattern);
     }
 
+    function areComparable(tree1, tree2) {
+	return tree1.op === tree2.op 
+	       && tree1.elems && tree2.elems 
+	       && tree1.elems.length === tree2.elems.length
+    }
+
     // Compute a substitution from meta-variables in 'pattern' such that
     // applyPattern pattern subst = tree 
     function computeMatches(pattern, tree) {
-	function match(pattern, tree, sub) {
-	    // X , term
-	    if(isMeta(pattern)){
-		var bound = lookupMeta(pattern, sub);
-		if(!bound) {
-		    bindTerm(pattern,tree,sub);
+	var env = {};
+	function match(pattern, tree) {
+	    if(pattern === tree) {
+		return;
+	    }
+	    if(isMeta(pattern)) {
+		var boundTerm = lookupMeta(pattern, env);
+		if(!boundTerm) {
+		    bindTerm(pattern, tree, env);
+		    return;
+		}
+		if(equalsTerm(boundTerm, tree) ) {
 		    return;
 		} else {
-		    console.log("meta bound");
-		    console.log(pattern);
-		    console.log(tree);
-		    console.log(bound);
-		    if(!equalsTerm(bound, tree)) {
-			console.log("should bail out now");
-			sub = null;
-			return;
-		    } else {
-			console.log("equals?");
-			console.log(bound);
-			console.log(tree);
+		    env = null;
+		    return;
+		}
+	    }
+
+	    // pattern is comparable to tree, recurse on each subtree
+	    // pattern is non-comparable, fail
+	    if(areComparable(pattern, tree) ) 
+	    {
+		for(var i in pattern.elems) {
+		    match(pattern.elems[i], tree.elems[i]);
+		    if(!env) {
 			return;
 		    }
 		}
 	    } else {
-		if(equalsTerm(pattern, tree)) {
-		    return;
-		} else {
-		    // op(elems1), op(elems2) && |elems1| = |elems2|
-		    if(pattern.op === tree.op && 
-		       pattern.elems && tree.elems &&
-		       pattern.elems.length == tree.elems.length) {
-			for(var i in pattern.elems) {
-			    match(pattern.elems[i], tree.elems[i], sub);
-			}
-			console.log("after for");
-			console.log(sub);
-		    } else {
-			sub = null;
-			return;
-		    }
-		}
+		env = null;
+		return;
 	    }
-
 	}
-	var sub = {}
-	match(pattern, tree, sub);
-	return sub;
+
+	match(pattern, tree);
+	return env;
     }
     
     return {
@@ -178,7 +174,7 @@ var meta2 = AST.mk("meta", [1]);
 // f(<meta-1>) {meta-1 : "1"} = f(1)
 var test1 = AST.applyPattern(AST.mk("call",[AST.mk("id",["f"]), AST.mk("argList",[{op:"meta",elems:[1]}])]), {1:term1});
 var f1 = AST.mk("call", [AST.mk("id",["f"]), term1, term2]);
-var p1 = AST.mk("call", [AST.mk("id",["f"]), meta1, meta1]);
+var p1 = AST.mk("call", [AST.mk("id",["f"]), meta1, meta2]);
 
 var test1res = AST.equals(test1, f1)
 
