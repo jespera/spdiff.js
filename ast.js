@@ -100,7 +100,11 @@ var AST = (function(){
     function applyPattern(pattern, sub) {
 	function apply(pattern) {
 	    if(isMeta(pattern)) {
-		return sub[pattern.elems[0]];
+		var boundTerm = sub[pattern.elems[0]];
+		if(boundTerm) {
+		    return boundTerm;
+		}
+		return pattern;
 	    }
 	    if(pattern.elems) {
 		var newArgs = pattern.elems.map(apply);
