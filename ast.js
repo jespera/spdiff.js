@@ -163,11 +163,63 @@ var AST = (function(){
 	return env;
     }
     
+
+    // traverses two trees in parallel, while constructing a
+    // aux. value
+    function reduce2(tree1, tree2, nodeFun, aux) {
+	
+    }
+    
+    // traverses two trees in parallel, while building a new tree
+    function traverse2(tree1, tree2, nodeVisit) {
+    }
+    
+    // compute anti-unifier
+    function mergeTerms(tree1, tree2) {
+	var env = {};
+	function merge(t1, t2) {
+	    if(equalsTerm(t1, t2)) {
+		return t1;
+	    }
+	    if(areComparable(t1, t2)) {
+		var newElems = [];
+		for(var i in t1.elems) {
+		    newElems.push(merge(t1.elems[i], t2.elems[i]));
+		}
+		return makeTerm(t1.op, newElems);
+	    }
+	    var boundMeta = env[[t1,t2]];
+	    if(boundMeta) {
+		return boundMeta;
+	    }
+	    var newMeta = makeMeta();
+	    env[[t1,t2]] = newMeta;
+	    return newMeta;
+	}
+	
+	var merged = merge(tree1, tree2);
+	return merged;
+    }
+    
+    function mkRewrite(lhs, rhs) {
+	var rewrite = {};
+	rewrite.lhs = lhs;
+	rewrite.rhs = rhs;
+	return rewrite;
+    }
+
+    function applyRewrite(patch, tree) {
+	
+    }
+    
     return {
         mk: makeTerm,
+	mkRewrite: mkRewrite,
         equals: equalsTerm,
 	applyPattern: applyPattern,
-	computeMatches: computeMatches
+	mergeTerms: mergeTerms,
+	computeMatches: computeMatches,
+	applyRewrite: applyRewrite
     };
 })();
 
@@ -177,14 +229,19 @@ var meta1 = AST.mk("meta", [0]);
 var meta2 = AST.mk("meta", [1]);
 // f(<meta-1>) {meta-1 : "1"} = f(1)
 var test1 = AST.applyPattern(AST.mk("call",[AST.mk("id",["f"]), AST.mk("argList",[{op:"meta",elems:[1]}])]), {1:term1});
-var f1 = AST.mk("call", [AST.mk("id",["f"]), term1, term2]);
+var f1 = AST.mk("call", [AST.mk("id",["f"]), term2, term2]);
+var f2 = AST.mk("call", [AST.mk("id",["f"]), term1, term1]);
 var p1 = AST.mk("call", [AST.mk("id",["f"]), meta1, meta2]);
 
-var test1res = AST.equals(test1, f1)
+//var test1res = AST.equals(test1, f1)
 
 console.log("loaded");
 
-console.log(AST.computeMatches(p1, f1));
+//console.log(AST.computeMatches(p1, f1));
+var merged = AST.mergeTerms(f1,f2);
+console.log(JSON.stringify(merged));
+console.log("equals");
+console.log(AST.equals(f1, merged));
 console.log("done");
 /*
   TODO
@@ -198,3 +255,4 @@ console.log("done");
 
   - write tests
 */
+AST.mergeTerms(f1,f1)
