@@ -208,8 +208,20 @@ var AST = (function(){
 	return rewrite;
     }
 
+    // apply a term-rewrite, lhs=>rhs such that every subterm, sub of
+    // tree where computeMatches(lhs,sub) = env and and <> null is
+    // replaced by applyPattern(rhs, env)
     function applyRewrite(patch, tree) {
+	function apply(tree) {
+	    var env = computeMatches(patch.lhs, tree);
+	    if(env) {
+		return applyPattern(patch.rhs, env);
+	    } else if(tree.elems) {
+		return makeTerm(tree.op, tree.elems.map(apply));
+	    }
 	
+	}
+	return apply(tree);
     }
     
     return {
@@ -229,19 +241,20 @@ var meta1 = AST.mk("meta", [0]);
 var meta2 = AST.mk("meta", [1]);
 // f(<meta-1>) {meta-1 : "1"} = f(1)
 var test1 = AST.applyPattern(AST.mk("call",[AST.mk("id",["f"]), AST.mk("argList",[{op:"meta",elems:[1]}])]), {1:term1});
-var f1 = AST.mk("call", [AST.mk("id",["f"]), term2, term2]);
+var f1 = AST.mk("call", [AST.mk("id",["f"]), term1, term2]);
 var f2 = AST.mk("call", [AST.mk("id",["f"]), term1, term1]);
 var p1 = AST.mk("call", [AST.mk("id",["f"]), meta1, meta2]);
-
+var p2 = AST.mk("replaced",[meta1, meta2]);
+var fplusf = AST.mk("plus",[f1,f2]);
+var patch1 = AST.mkRewrite(p1, p2);
 //var test1res = AST.equals(test1, f1)
 
-console.log("loaded");
-
-//console.log(AST.computeMatches(p1, f1));
-var merged = AST.mergeTerms(f1,f2);
-console.log(JSON.stringify(merged));
+console.log(AST.computeMatches(p1, f1));
+//var merged = AST.mergeTerms(f1,f2);
+var newTerm = AST.applyRewrite(patch1, fplusf);
+console.log(JSON.stringify(newTerm, null, 2));
 console.log("equals");
-console.log(AST.equals(f1, merged));
+console.log(AST.equals(fplusf, newTerm));
 console.log("done");
 /*
   TODO
