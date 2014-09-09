@@ -163,15 +163,31 @@ var AST = (function(){
 	return env;
     }
     
-
-    // traverses two trees in parallel, while constructing a
-    // aux. value
-    function reduce2(tree1, tree2, nodeFun, aux) {
-	
-    }
-    
     // traverses two trees in parallel, while building a new tree
-    function traverse2(tree1, tree2, nodeVisit) {
+    function traverse2(nodeVisit) {
+	return function visit(tree1, tree2) {
+	    var res = nodeVisit(tree1, tree2);
+	    if(res.done) {
+		return res.newTree;
+	    } else if(areComparable(tree1, tree2)){
+		var newOp = res.newOp;
+		var newElems = [];
+		for(var i in tree1.elems){
+		    newElems.push(visit(tree1.elems[i],tree2.elems[i]));
+		}
+		return makeTerm(newOp, newElems);
+	    }
+	}
+    }
+
+    function isDone(newTree) {
+	return { done: true,
+		 newTree: newTree };
+    }
+
+    function notDone(newOp) {
+	return { done: false,
+		 newOp: newOp };
     }
     
     // compute anti-unifier
@@ -179,26 +195,24 @@ var AST = (function(){
 	var env = {};
 	function merge(t1, t2) {
 	    if(equalsTerm(t1, t2)) {
-		return t1;
+		return isDone(t1);
 	    }
 	    if(areComparable(t1, t2)) {
-		var newElems = [];
-		for(var i in t1.elems) {
-		    newElems.push(merge(t1.elems[i], t2.elems[i]));
-		}
-		return makeTerm(t1.op, newElems);
+		return notDone(t1.op);
 	    }
 	    var boundMeta = env[[t1,t2]];
 	    if(boundMeta) {
-		return boundMeta;
+		return isDone(boundMeta);
 	    }
+	    
 	    var newMeta = makeMeta();
 	    env[[t1,t2]] = newMeta;
-	    return newMeta;
+	    
+	    return isDone(newMeta);
 	}
 	
-	var merged = merge(tree1, tree2);
-	return merged;
+	var visitor = traverse2(merge);
+	return visitor(tree1, tree2);
     }
     
     function mkRewrite(lhs, rhs) {
@@ -241,8 +255,8 @@ var meta1 = AST.mk("meta", [0]);
 var meta2 = AST.mk("meta", [1]);
 // f(<meta-1>) {meta-1 : "1"} = f(1)
 var test1 = AST.applyPattern(AST.mk("call",[AST.mk("id",["f"]), AST.mk("argList",[{op:"meta",elems:[1]}])]), {1:term1});
-var f1 = AST.mk("call", [AST.mk("id",["f"]), term1, term2]);
-var f2 = AST.mk("call", [AST.mk("id",["f"]), term1, term1]);
+var f1 = AST.mk("call", [AST.mk("id",["f"]), term1, term2, term1]);
+var f2 = AST.mk("call", [AST.mk("id",["f"]), term2, term1, term2]);
 var p1 = AST.mk("call", [AST.mk("id",["f"]), meta1, meta2]);
 var p2 = AST.mk("replaced",[meta1, meta2]);
 var fplusf = AST.mk("plus",[f1,f2]);
@@ -250,12 +264,12 @@ var patch1 = AST.mkRewrite(p1, p2);
 //var test1res = AST.equals(test1, f1)
 
 console.log(AST.computeMatches(p1, f1));
-//var merged = AST.mergeTerms(f1,f2);
-var newTerm = AST.applyRewrite(patch1, fplusf);
+var newTerm = AST.mergeTerms(f1,f2);
+//var newTerm = AST.applyRewrite(patch1, fplusf);
 console.log(JSON.stringify(newTerm, null, 2));
-console.log("equals");
-console.log(AST.equals(fplusf, newTerm));
-console.log("done");
+//console.log("equals");
+//console.log(AST.equals(fplusf, newTerm));
+//console.log("done");
 /*
   TODO
 
