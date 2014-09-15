@@ -102,19 +102,7 @@ var AST = (function(){
 	if(!isTerm(t1) || !isTerm(t2)) {
 	    return t1 === t2;
 	}
-        if (t1.op !== t2.op) {
-            return false;
-        }
-        if (t1.length !== t2.length) {
-            return false;
-        }
-        
-        for(var i in t1.elems) {
-            if(!equalsTerm(t1.elems[i], t2.elems[i])) {
-                return false;
-            }
-        }
-        return true;
+	return t1.hkey === t2.hkey;
     }
 
     // lookup 'meta' in 'sub'
