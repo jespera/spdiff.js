@@ -321,6 +321,31 @@ var AST = (function(){
 	}
 	return apply(tree);
     }
+
+    function print(origTerm) {
+	var str = "";
+	function toStr(term) {
+	    if(isTerm(term)) {
+		str += term.op;
+		if(term.elems && term.elems.length > 0) {
+		    str += "(";
+		    for(var i in term.elems) {
+			toStr(term.elems[i]);
+			if(i < term.elems.length - 1) {
+			    str += ", ";
+			}
+		    }
+		    str += ")"; 
+		}
+	    } else {
+		str += JSON.stringify(term);
+	    }
+	    
+	}
+	toStr(origTerm);
+	return str;
+    }
+
     
     return {
         mk: makeTerm,
@@ -329,7 +354,8 @@ var AST = (function(){
 	applyPattern: applyPattern,
 	mergeTerms: mergeTerms,
 	computeMatches: computeMatches,
-	applyRewrite: applyRewrite
+	applyRewrite: applyRewrite,
+	print: print
     };
 })();
 
@@ -339,18 +365,19 @@ var meta1 = AST.mk("meta", [0]);
 var meta2 = AST.mk("meta", [1]);
 // f(<meta-1>) {meta-1 : "1"} = f(1)
 var test1 = AST.applyPattern(AST.mk("call",[AST.mk("id",["f"]), AST.mk("argList",[{op:"meta",elems:[1]}])]), {1:term1});
-var f1 = AST.mk("call", [AST.mk("id",["f"]), term1, term2, term1]);
-var f2 = AST.mk("call", [AST.mk("id",["f"]), term2, term1, term2]);
+var f1 = AST.mk("call", [AST.mk("id",["f"]), term1, term2]);
+var f2 = AST.mk("call", [AST.mk("id",["f"]), term2, term1]);
 var p1 = AST.mk("call", [AST.mk("id",["f"]), meta1, meta2]);
 var p2 = AST.mk("replaced",[meta1, meta2]);
 var fplusf = AST.mk("plus",[f1,f2]);
 var patch1 = AST.mkRewrite(p1, p2);
 //var test1res = AST.equals(test1, f1)
-
-console.log(AST.computeMatches(p1, f1));
-var newTerm = AST.mergeTerms(f1,f2);
+console.log(f1);
+console.log(AST.print(f1));
+//console.log(AST.computeMatches(p1, f1));
+//var newTerm = AST.mergeTerms(f1,f2);
 //var newTerm = AST.applyRewrite(patch1, fplusf);
-console.log(JSON.stringify(newTerm, null, 2));
+//console.log(JSON.stringify(newTerm, null, 2));
 //console.log("equals");
 //console.log(AST.equals(fplusf, newTerm));
 //console.log("done");
@@ -366,4 +393,4 @@ console.log(JSON.stringify(newTerm, null, 2));
 
   - write tests
 */
-AST.mergeTerms(f1,f1)
+//AST.mergeTerms(f1,f1)
