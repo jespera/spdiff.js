@@ -63,10 +63,6 @@ var AST = (function(){
 	return term.op && term.op === "meta";
     } 
 
-    function isTerm(term) {
-	return term.op;
-    }
-
     function equalsTerm(t1, t2) {
 	if(!isTerm(t1) || !isTerm(t2)) {
 	    return t1 === t2;
