@@ -96,7 +96,7 @@ var AST = (function(){
     function applyPattern(pattern, sub) {
 	function apply(pattern) {
 	    if(isMeta(pattern)) {
-		var boundTerm = sub[pattern.elems[0]];
+		var boundTerm = lookupMeta(pattern, sub);
 		if(boundTerm) {
 		    return boundTerm;
 		}
