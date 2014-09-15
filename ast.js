@@ -64,7 +64,26 @@ var AST = (function(){
     }
 
     function makeTerm(op, elems) {
-        return { op: op, elems: elems};
+	var opHash = hashCode(op);
+	var termHash = 
+	    elems.reduce(function(accHash, elem){
+		var elemHash;
+		if(isTerm(elem)) {
+		    elemHash = elem.hkey;
+		} else {
+		    elemHash = hashCode(elem);
+		}
+		return Math.abs(19*elemHash + accHash);
+	    }, opHash);
+	var existingTerm = terms[termHash];
+	if(existingTerm){
+	    //TODO: handle collisions
+	    return existingTerm;
+	}
+        var newTerm = { op: op, elems: elems, hkey: termHash};
+	//TODO: somehow get weak references here
+	terms[termHash] = newTerm; 
+	return newTerm;
     }
 
     var nextMeta = 0;
