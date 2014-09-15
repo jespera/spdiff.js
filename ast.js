@@ -47,6 +47,22 @@
 
 var AST = (function(){
 
+    function hashCode(s){
+	if(!s.split) {
+	    s = s.toString();
+	}
+	return s.split("").reduce(function(a,b){
+	    a=((a<<5)-a)+b.charCodeAt(0);
+	    return a&a
+	},0);              
+    }
+
+    var terms = {};
+
+    function isTerm(term) {
+	return term.op;
+    }
+
     function makeTerm(op, elems) {
         return { op: op, elems: elems};
     }
