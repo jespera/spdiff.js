@@ -128,6 +128,14 @@ var AST = (function(){
 	return term.op;
     }
 
+    function getHKey(term) {
+	if(isTerm(term)) {
+	    term.hkey;
+	} else {
+	    return hashCode(term);
+	}
+    }
+
     function makeTerm(op, elems) {
 	var opHash = hashCode(op);
 	var termHash = 
@@ -285,13 +293,13 @@ var AST = (function(){
 	    if(areComparable(t1, t2)) {
 		return notDone(t1.op);
 	    }
-	    var boundMeta = env[[t1,t2]];
+	    var boundMeta = env[[getHKey(t1),getHKey(t2)]];
 	    if(boundMeta) {
 		return isDone(boundMeta);
 	    }
 	    
 	    var newMeta = makeMeta();
-	    env[[t1,t2]] = newMeta;
+	    env[env[[getHKey(t1),getHKey(t2)]]] = newMeta;
 	    
 	    return isDone(newMeta);
 	}
