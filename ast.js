@@ -115,7 +115,7 @@ var AST = (function(){
 	if(!s.split) {
 	    s = s.toString();
 	}
-	return murmurhash3_32_gc(s, 130);
+	return murmurhash3_32_gc(s, 0);
 	// return s.split("").reduce(function(a,b){
 	//     a=((a<<5)-a)+b.charCodeAt(0);
 	//     return a&a
@@ -148,6 +148,7 @@ var AST = (function(){
 		}
 		var newHash = ((accHash<<5)-accHash)+elemHash;
 		return Math.abs(newHash & newHash);
+		
 	    }, opHash);
 	var existingTerm = terms[termHash];
 	if(existingTerm){
@@ -210,8 +211,8 @@ var AST = (function(){
 
     function areComparable(tree1, tree2) {
 	return tree1.op === tree2.op 
-	       && tree1.elems && tree2.elems 
-	       && tree1.elems.length === tree2.elems.length
+	    && tree1.elems && tree2.elems 
+	    && tree1.elems.length === tree2.elems.length
     }
 
     // Compute a substitution from meta-variables in 'pattern' such that
@@ -373,26 +374,16 @@ var AST = (function(){
 
 var term1 = AST.mk("num", [42]);
 var term2 = AST.mk("num", [117]);
-var meta1 = AST.mk("meta", [0]);
-var meta2 = AST.mk("meta", [1]);
-// f(<meta-1>) {meta-1 : "1"} = f(1)
-var test1 = AST.applyPattern(AST.mk("call",[AST.mk("id",["f"]), AST.mk("argList",[{op:"meta",elems:[1]}])]), {1:term1});
+
 var f1 = AST.mk("call", [AST.mk("id",["f"]), term1, term2]);
 var f2 = AST.mk("call", [AST.mk("id",["f"]), term2, term1]);
-var p1 = AST.mk("call", [AST.mk("id",["f"]), meta1, meta2]);
-var p2 = AST.mk("replaced",[meta1, meta2]);
-var fplusf = AST.mk("plus",[f1,f2]);
-var patch1 = AST.mkRewrite(p1, p2);
-//var test1res = AST.equals(test1, f1)
-console.log(f1);
-console.log(AST.print(f1));
-//console.log(AST.computeMatches(p1, f1));
-//var newTerm = AST.mergeTerms(f1,f2);
-//var newTerm = AST.applyRewrite(patch1, fplusf);
-//console.log(JSON.stringify(newTerm, null, 2));
-//console.log("equals");
-//console.log(AST.equals(fplusf, newTerm));
-//console.log("done");
+
+
+var newTerm = AST.mergeTerms(f1,f2);
+
+console.log(AST.print(newTerm));
+console.log(JSON.stringify(newTerm,null,2));
+
 /*
   TODO
 
