@@ -300,7 +300,7 @@ var AST = (function(){
 	    }
 	    
 	    var newMeta = makeMeta();
-	    env[env[[getHKey(t1),getHKey(t2)]]] = newMeta;
+	    env[[getHKey(t1),getHKey(t2)]] = newMeta;
 	    
 	    return isDone(newMeta);
 	}
