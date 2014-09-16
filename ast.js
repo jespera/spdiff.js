@@ -138,7 +138,8 @@ var AST = (function(){
 		} else {
 		    elemHash = hashCode(elem);
 		}
-		return Math.abs(19*elemHash + accHash);
+		var newHash = ((accHash<<5)-accHash)+elemHash;
+		return Math.abs(newHash & newHash);
 	    }, opHash);
 	var existingTerm = terms[termHash];
 	if(existingTerm){
