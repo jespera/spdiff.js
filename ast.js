@@ -326,7 +326,10 @@ var AST = (function(){
     function print(origTerm) {
 	var str = "";
 	function toStr(term) {
-	    if(isTerm(term)) {
+	    if(isMeta(term)) {
+		str += "X" + JSON.stringify(term.elems[0]);
+		
+	    } else if(isTerm(term)) {
 		str += term.op;
 		if(term.elems && term.elems.length > 0) {
 		    str += "(";
@@ -340,7 +343,7 @@ var AST = (function(){
 		}
 	    } else {
 		str += JSON.stringify(term);
-	    }
+	    } 
 	    
 	}
 	toStr(origTerm);
