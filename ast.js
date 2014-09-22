@@ -332,6 +332,94 @@ var AST = (function(){
 	return apply(tree);
     }
 
+    function treeSize(tree) {
+	var accSize = 0;
+	function size(tree) {
+	    if(isMeta(tree)) {
+		return;
+	    }
+	    accSize++;
+	    if(isTerm(tree) && tree.elems) {
+		for(var i in tree.elems) {
+		    size(tree.elems[i]);
+		}
+	    }
+	}
+	size(tree);
+	return accSize;
+	
+    }
+
+    function eqIs0(l, r) {
+	return (equalsTerm(l,r)) ? 0 : 2;
+    }
+
+    function editDist(oldT, newT) {
+	function red(s, t) {
+	    return treeSize(t) + s;
+	}
+	var memoDist = {};
+	function distTerms(oldElems, newElems) {
+	    if(oldElems.length == 0 && newElems.length > 0) {
+		return newElems.reduce(red, 0);
+	    }
+	    if(newElems.length == 0 && oldElems.length > 0) {
+		return oldElems.reduce(red, 0);
+	    }
+	    if(newElems.length == 0 && oldElems.length == 0) {
+		return 0;
+	    }
+	    // both oldElems and newElems are non-null and have a
+	    // length > 0
+	    var min1 = 
+		distTerms(oldElems.slice(1), 
+			  newElems)
+		+ treeSize(oldElems[0]);
+	    var min2 = 		
+		distTerms(oldElems, 
+			  newElems.slice(1))
+		+ treeSize(newElems[0]);
+
+	    var min3 =
+		distTerms(oldElems.slice(1),
+			  newElems.slice(1)) 
+		+ dist(oldElems[0], 
+		       newElems[0]);
+	    
+	    var res = Math.min(min1,min2,min3);
+	    return res;
+	}
+	
+	function dist(o,n) {
+	    var ohkey = getHKey(o);
+	    var nhkey = getHKey(n);
+	    var memoKey = [ohkey, nhkey];
+	    var memo = memoDist[memoKey];
+	    if(memo) {
+		return memo;
+	    }
+	    var newMemo = 0;
+	    var oIsTerm = isTerm(o);
+	    var nIsTerm = isTerm(n);
+	    if(oIsTerm && nIsTerm){
+//		if(equalsTerm(o,n)) {
+//		    newMemo = 0;
+//		} else {
+		newMemo = eqIs0(o.op, n.op) + distTerms(o.elems, n.elems);
+//		}
+	    } else if(oIsTerm && !nIsTerm) {
+		newMemo = 1 + treeSize(o);
+	    } else if(!oIsTerm && nIsTerm) {
+		newMemo = 1 + treeSize(n);
+	    } else {
+		newMemo = eqIs0(o, n);
+	    }
+	    memoDist[memoKey] = newMemo;
+	    return newMemo;
+	}
+	return dist(oldT, newT);
+    }
+
     function print(origTerm) {
 	var str = "";
 	function toStr(term) {
