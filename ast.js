@@ -130,7 +130,7 @@ var AST = (function(){
 
     function getHKey(term) {
 	if(isTerm(term)) {
-	    term.hkey;
+	    return term.hkey;
 	} else {
 	    return hashCode(term);
 	}
