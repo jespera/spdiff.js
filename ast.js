@@ -456,7 +456,9 @@ var AST = (function(){
 	mergeTerms: mergeTerms,
 	computeMatches: computeMatches,
 	applyRewrite: applyRewrite,
-	print: print
+	print: print,
+	size: treeSize,
+	dist: editDist
     };
 })();
 
