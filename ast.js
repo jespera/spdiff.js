@@ -464,20 +464,20 @@ var AST = (function(){
 
 var term1 = AST.mk("num", [42]);
 var term2 = AST.mk("num", [117]);
+var termf = AST.mk("id",["f"]);
 
-var f1 = AST.mk("call", [AST.mk("id",["f"]), term1, term2]);
-var f2 = AST.mk("call", [AST.mk("id",["f"]), term2, term1]);
-
+var f1 = AST.mk("call", [termf, term1, term2]);
+var f2 = AST.mk("call", [termf, term2, term1]);
+console.log("f1: " + JSON.stringify(f1));
+console.log("dist: " + AST.dist(f1,f1));
 
 var newTerm = AST.mergeTerms(f1,f2);
-
+console.log("size f1*f2: " + AST.size(newTerm));
 console.log(AST.print(newTerm));
-console.log(JSON.stringify(newTerm,null,2));
+//console.log(JSON.stringify(newTerm,null,2));
 
 /*
   TODO
-
-  - implement hash-consing for terms for constant time equality checks
 
   - make tree traversal more generic so we don't rely on concrete
     implementation externally
