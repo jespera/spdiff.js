@@ -282,9 +282,13 @@ var AST = (function(){
 	    var env = computeMatches(patch.lhs, tree);
 	    if(env) {
 		return applyPattern(patch.rhs, env);
-	    } else if(tree.elems) {
+	    } 
+	    if(tree.elems) {
 		return makeTerm(tree.op, tree.elems.map(apply));
 	    }
+
+	    return tree;
+	    
 	
 	}
 	return apply(tree);
