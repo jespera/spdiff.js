@@ -364,11 +364,11 @@ var AST = (function(){
 	    var oIsTerm = isTerm(o);
 	    var nIsTerm = isTerm(n);
 	    if(oIsTerm && nIsTerm){
-//		if(equalsTerm(o,n)) {
-//		    newMemo = 0;
-//		} else {
-		newMemo = eqIs0(o.op, n.op) + distTerms(o.elems, n.elems);
-//		}
+		if(equalsTerm(o,n)) {
+		    newMemo = 0;
+		} else {
+		    newMemo = eqIs0(o.op, n.op) + distTerms(o.elems, n.elems);
+		}
 	    } else if(oIsTerm && !nIsTerm) {
 		newMemo = 1 + treeSize(o);
 	    } else if(!oIsTerm && nIsTerm) {
