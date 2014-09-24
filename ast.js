@@ -409,7 +409,12 @@ var AST = (function(){
 	return str;
     }
 
-    
+    function isSafe(rewrite, srcTerm, tgtTerm) {
+	var midTerm = applyRewrite(rewrite, srcTerm);
+	return editDist(srcTerm, midTerm) + editDist(midTerm,tgtTerm) === editDist(srcTerm,tgtTerm);
+    }
+
+
     return {
         mk: makeTerm,
 	mkRewrite: mkRewrite,
@@ -418,6 +423,7 @@ var AST = (function(){
 	mergeTerms: mergeTerms,
 	computeMatches: computeMatches,
 	applyRewrite: applyRewrite,
+	isSafe: isSafe,
 	print: print,
 	size: treeSize,
 	dist: editDist
@@ -428,14 +434,13 @@ var term1 = AST.mk("num", [42]);
 var term2 = AST.mk("num", [117]);
 var termf = AST.mk("id",["f"]);
 
-var f1 = AST.mk("call", [termf, term1, term2]);
-var f2 = AST.mk("call", [termf, term2, term1]);
-console.log("f1: " + JSON.stringify(f1));
-console.log("dist: " + AST.dist(f1,f1));
+var f1 = AST.mk("call", [termf, term1, term2, term1]);
+var f2 = AST.mk("call", [termf, term2, term2, term2]);
 
-var newTerm = AST.mergeTerms(f1,f2);
-console.log("size f1*f2: " + AST.size(newTerm));
-console.log(AST.print(newTerm));
+var rw = { lhs: term1, rhs: term2 }
+
+console.log("isSafe: " + AST.isSafe(rw, f1, f2));
+
 //console.log(JSON.stringify(newTerm,null,2));
 
 /*
