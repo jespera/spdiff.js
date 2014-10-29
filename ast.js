@@ -83,7 +83,7 @@ var AST = (function(){
     var terms = {};
 
     function isTerm(term) {
-	return term.op;
+	return term && term.op;
     }
 
     function getHKey(term) {
@@ -297,9 +297,7 @@ var AST = (function(){
     function treeSize(tree) {
 	var accSize = 0;
 	function size(tree) {
-	    if(isMeta(tree)) {
-		return;
-	    }
+	    if(!tree) { return; }
 	    accSize++;
 	    if(isTerm(tree) && tree.elems) {
 		for(var i in tree.elems) {
@@ -316,6 +314,7 @@ var AST = (function(){
 	return (equalsTerm(l,r)) ? 0 : 2;
     }
 
+    
     function editDist(oldT, newT) {
 	function red(s, t) {
 	    return treeSize(t) + s;
@@ -415,6 +414,61 @@ var AST = (function(){
     }
 
 
+    function diffCost(diff) {
+	return diff.reduce(
+	    function(accCost, diffElem) {
+		return accCost + treeSize(diffElem.lhs) + treeSize(diffElem.rhs);
+	    }, 0);
+    }
+
+    function d(srcTerms, tgtTerms) {
+	/* d([], ys) = map (+) ys
+	       d(xs, []) = map (-) xs
+	       d(x:xs, y:ys) =
+	       let min1 = -x @ d(xs, y:ys)
+	       let min2 = +y @ d(x:xs, ys)
+		 let min3 = d(x,y) @ d(xs,ys)
+		 min_by cost [min1, min2, min3]
+	*/
+	if(srcTerms.length == 0) {
+	    return tgtTerms.map(function(term) {
+		    return mkRewrite(null, term);
+	    });
+	}
+	if(tgtTerms.length == 0) {
+	    return srcTerms.map(function(term) {
+		return mkRewrite(term, null);
+	    });
+	}
+	var min1 = [mkRewrite(srcTerms[0],null)].concat(d(srcTerms.slice(1), tgtTerms));
+	var cost1 = diffCost(min1);
+	var min2 = [mkRewrite(null, tgtTerms[0])].concat(d(srcTerms, tgtTerms.slice(1)));
+	var cost2 = diffCost(min2);
+	var min3 = getDiffs(srcTerms[0],tgtTerms[0]).concat(d(srcTerms.slice(1),tgtTerms.slice(1)));
+	var cost3 = diffCost(min3);
+	if(cost3 <= cost1 && cost3 <= cost2) {
+	    return min3;
+	} else if ( cost1 <= cost2) {
+	    return min1;
+	} else {
+	    return min2;
+	}
+    }
+    
+    function getDiffs(srcTerm, tgtTerm) {
+	if(equalsTerm(srcTerm, tgtTerm)) {
+	    return [];
+	}
+	if(isTerm(srcTerm) && isTerm(tgtTerm)) {
+	    var diffs = [];
+	    if(srcTerm.op !== tgtTerm.op) {
+		diffs.push(mkRewrite(srcTerm.op, tgtTerm.op));
+	    }
+	    return diffs.concat(d(srcTerm.elems, tgtTerm.elems));
+	}
+	return [mkRewrite(srcTerm, tgtTerm)];
+    }
+
     return {
         mk: makeTerm,
 	mkRewrite: mkRewrite,
@@ -426,20 +480,23 @@ var AST = (function(){
 	isSafe: isSafe,
 	print: print,
 	size: treeSize,
-	dist: editDist
+	dist: editDist,
+	rewrites: getDiffs
     };
 })();
 
 var term1 = AST.mk("num", [42]);
 var term2 = AST.mk("num", [117]);
+var term3 = AST.mk("num", [10]);
 var termf = AST.mk("id",["f"]);
 
 var f1 = AST.mk("call", [termf, term1, term2, term1]);
-var f2 = AST.mk("call", [termf, term2, term2, term2]);
+var f2 = AST.mk("call", [termf, term2, term2]);
 
 var rw = { lhs: term1, rhs: term2 }
-
-console.log("isSafe: " + AST.isSafe(rw, f1, f2));
+console.log("old : " + AST.print(f1));
+console.log("new : " + AST.print(f2));
+console.log("rewrites: " + JSON.stringify(AST.rewrites(f1,f2),null,2));
 
 //console.log(JSON.stringify(newTerm,null,2));
 
