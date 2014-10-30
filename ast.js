@@ -444,7 +444,7 @@ var AST = (function(){
 	var cost1 = diffCost(min1);
 	var min2 = [mkRewrite(null, tgtTerms[0])].concat(d(srcTerms, tgtTerms.slice(1)));
 	var cost2 = diffCost(min2);
-	var min3 = getDiffs(srcTerms[0],tgtTerms[0]).concat(d(srcTerms.slice(1),tgtTerms.slice(1)));
+	var min3 = getMinimalDiffs(srcTerms[0],tgtTerms[0]).concat(d(srcTerms.slice(1),tgtTerms.slice(1)));
 	var cost3 = diffCost(min3);
 	if(cost3 <= cost1 && cost3 <= cost2) {
 	    return min3;
@@ -455,7 +455,7 @@ var AST = (function(){
 	}
     }
     
-    function getDiffs(srcTerm, tgtTerm) {
+    function getMinimalDiffs(srcTerm, tgtTerm) {
 	if(equalsTerm(srcTerm, tgtTerm)) {
 	    return [];
 	}
@@ -469,6 +469,29 @@ var AST = (function(){
 	return [mkRewrite(srcTerm, tgtTerm)];
     }
 
+    function getSimpleDiffs(srcTerm, tgtTerm) {
+	var diffs = [];
+	function get(src,tgt) {
+	    if(equalsTerm(src,tgt)) {
+		return;
+	    }
+	    diffs.push(mkRewrite(src,tgt));
+	    if(src && tgt && src.elems && tgt.elems &&
+	       src.elems.length == tgt.elems.length) {
+		src.elems.forEach(
+		    function(srcElem, srcIndex) {
+			var tgtElem = tgt.elems[srcIndex];
+			get(srcElem, tgtElem);
+		    }
+		)
+	    }
+	}
+	get(srcTerm, tgtTerm);
+	return diffs;
+    }
+		
+	
+    
     return {
         mk: makeTerm,
 	mkRewrite: mkRewrite,
@@ -481,7 +504,7 @@ var AST = (function(){
 	print: print,
 	size: treeSize,
 	dist: editDist,
-	rewrites: getDiffs
+	rewrites: getSimpleDiffs
     };
 })();
 
@@ -490,7 +513,7 @@ var term2 = AST.mk("num", [117]);
 var term3 = AST.mk("num", [10]);
 var termf = AST.mk("id",["f"]);
 
-var f1 = AST.mk("call", [termf, term1, term2, term1]);
+var f1 = AST.mk("call", [termf, term1, term2]);
 var f2 = AST.mk("call", [termf, term2, term2]);
 
 var rw = { lhs: term1, rhs: term2 }
