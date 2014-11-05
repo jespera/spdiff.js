@@ -128,7 +128,7 @@ var AST = (function(){
     }
 
     function isMeta(term) {
-	return term.op && term.op === "meta";
+	return term && term.op && term.op === "meta";
     } 
 
     function equalsTerm(t1, t2) {
@@ -168,7 +168,8 @@ var AST = (function(){
     }
 
     function areComparable(tree1, tree2) {
-	return tree1.op === tree2.op 
+	return tree1 && tree2
+	    && tree1.op === tree2.op 
 	    && tree1.elems && tree2.elems 
 	    && tree1.elems.length === tree2.elems.length
     }
@@ -243,8 +244,8 @@ var AST = (function(){
     }
     
     // compute anti-unifier
-    function mergeTerms(tree1, tree2) {
-	var env = {};
+    function mergeTerms(tree1, tree2, startEnv) {
+	var env = startEnv || {};
 	function merge(t1, t2) {
 	    if(equalsTerm(t1, t2)) {
 		return isDone(t1);
@@ -266,7 +267,7 @@ var AST = (function(){
 	var visitor = traverse2(merge);
 	return visitor(tree1, tree2);
     }
-    
+
     function mkRewrite(lhs, rhs) {
 	var rewrite = {};
 	rewrite.lhs = lhs;
@@ -274,6 +275,13 @@ var AST = (function(){
 	return rewrite;
     }
 
+    function mergeRewrites(rw1, rw2) {
+	var mergeEnv = {};
+	var mergedLHS = mergeTerms(rw1.lhs, rw2.lhs, mergeEnv);
+	var mergedRHS = mergeTerms(rw1.rhs, rw2.rhs, mergeEnv);
+	return mkRewrite(mergedLHS, mergedRHS);
+    }
+    
     // apply a term-rewrite, lhs=>rhs such that every subterm, sub of
     // tree where computeMatches(lhs,sub) = env and and <> null is
     // replaced by applyPattern(rhs, env)
@@ -489,8 +497,59 @@ var AST = (function(){
 	get(srcTerm, tgtTerm);
 	return diffs;
     }
-		
-	
+
+    // we'll assume both lhsRewrite and rhsRewrite are safe for the changeset given
+    // in other words, both rewrites applies to all pairs in the changeset 
+    function isSubRewrite(changeset) { // changeset = [ {oldTerm:term,newTerm:term} ]
+	return function(lhsRewrite, rhsRewrite) {
+	    return changeset.every(function(change) {
+		var midTerm = applyRewrite(rhsRewrite(change.newTerm));
+		return isSafe(lhsRewrite, change.oldTerm, midTerm);
+	    });
+	}
+    }
+    
+    // given changeset:
+    // map each changeset to set of simple changes
+    // try to merge simple changes from all elements in changeset
+    // - remove merged change if unsafe
+    // - don't merge with more changes if merged change is subpatch of already found
+
+    function getMergeDiffs(changeset) {
+	var simpleDiffs = changeset.map(function(change) {
+	    return getSimpleDiffs(change.oldTerm, change.newTerm);
+	});
+	var mergedChanges = [];
+	function mergeFold(curMerge, otherDiffs) {
+	    if(otherDiffs.length == 0) {
+		mergedChanges.push(curMerge);
+	    } else {
+		var rewrites = otherDiffs[0];
+		rewrites.forEach(function (rewrite) {
+		    var newMerge = curMerge ? mergeRewrites(curMerge, rewrite) : rewrite;
+		    // todo
+		    // check safety
+		    var newMergeSafe = changeset.every(function(change) {
+			return isSafe(newMerge, change.oldTerm, change.newTerm);
+		    });
+		    if(!newMergeSafe) {
+			return;
+		    }
+		    	
+		    // check not subpatch of already found patch
+		    // maybe not?
+		    mergeFold(newMerge, otherDiffs.slice(1));
+		});
+	    }
+	}
+	mergeFold(null, simpleDiffs);
+	// filter out found changes that are not smalles (unless we do that in the "base-case"
+	return mergedChanges;
+    }
+    
+    function printRewrite(rw) {
+	return print(rw.lhs) + " => " + print(rw.rhs);
+    }
     
     return {
         mk: makeTerm,
@@ -504,7 +563,10 @@ var AST = (function(){
 	print: print,
 	size: treeSize,
 	dist: editDist,
-	rewrites: getSimpleDiffs
+	rewrites: getSimpleDiffs,
+	mergeRewrites: mergeRewrites,
+	printRewrite: printRewrite,
+	getMergeDiffs: getMergeDiffs
     };
 })();
 
@@ -513,13 +575,28 @@ var term2 = AST.mk("num", [117]);
 var term3 = AST.mk("num", [10]);
 var termf = AST.mk("id",["f"]);
 
-var f1 = AST.mk("call", [termf, term1, term2]);
-var f2 = AST.mk("call", [termf, term2, term2]);
+var f1 = AST.mk("call", [termf, term1, term1]);
+var f2 = AST.mk("call", [termf, term2, term1]);
 
-var rw = { lhs: term1, rhs: term2 }
-console.log("old : " + AST.print(f1));
-console.log("new : " + AST.print(f2));
-console.log("rewrites: " + JSON.stringify(AST.rewrites(f1,f2),null,2));
+var f3 = AST.mk("call", [termf, term1, term2]);
+var f4 = AST.mk("call", [termf, term2, term2]);
+
+var changeset = [{oldTerm: f1, newTerm: f2}, {oldTerm: f3, newTerm: f4}];
+
+var rw1 = { lhs: f1, rhs: f2 }
+var rw2 = { lhs: f3, rhs: f4 }
+
+//console.log("mergedrewrite: " + JSON.stringify(AST.mergeRewrites(rw1, rw2),null,2));
+console.log("result: ");
+var rewrites = AST.getMergeDiffs(changeset); 
+console.log("rewrites:");
+if(rewrites) {
+    rewrites.forEach(function(rewrite) {
+	console.log("::: " + AST.printRewrite(rewrite));
+    });
+} else {
+    console.log("null rewrites?");
+}
 
 //console.log(JSON.stringify(newTerm,null,2));
 
