@@ -544,11 +544,16 @@ function convertToAST(term) {
         if(term.op === "[]") {
             return convertToAST(term.elems);
         }
-        
+
+        if(isMeta(term)) {
+						return "<" + term.elems[0] + ">";
+				}
+
         var ast = {};
         ast["type"] = term.op;
         for(var elemIdx in term.elems) {
             var termValue = term.elems[elemIdx];
+						
             var prop = termValue.op;
             if(termValue.elems.length !== 1) {
                 throw "Not === 1";
