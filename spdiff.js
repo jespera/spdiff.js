@@ -530,6 +530,40 @@ function convertToTerm(ast) {
     return ast;
 }
 
+function convertToAST(term) {
+    if(!term) {
+        throw "No term?";
+    }
+    if(typeof(term) !== "object") {
+        return term;
+    }
+    if(Array.isArray(term)) {
+        return term.map(convertToAST);
+    }
+    if(isTerm(term)) {
+        if(term.op === "[]") {
+            return convertToAST(term.elems);
+        }
+        
+        var ast = {};
+        ast["type"] = term.op;
+        for(var elemIdx in term.elems) {
+            var termValue = term.elems[elemIdx];
+            var prop = termValue.op;
+            if(termValue.elems.length !== 1) {
+                throw "Not === 1";
+            }
+            if(termValue.elems.length === 0) {
+                throw "=== 0?";
+            }
+            ast[prop] = convertToAST(termValue.elems[0]);            
+        }
+        return ast;
+    }
+    return term;
+
+}
+
 var spdiff = {};
 
 spdiff.tester =
@@ -544,7 +578,9 @@ spdiff.tester =
 				var f2_new = jsParser.parse("f(117)");
 				
 				var f1_old_conv = convertToTerm(f1_old);
-				console.log(print(f1_old_conv));
+        console.log("term: " + print(f1_old_conv));
+        var f1_old_back = convertToAST(f1_old_conv);
+				console.log(print(jsParser.print(f1_old_back)));
 				var f1_new_conv = convertToTerm(f1_new);
 				var f2_old_conv = convertToTerm(f2_old);
 				var f2_new_conv = convertToTerm(f2_new);
