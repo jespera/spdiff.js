@@ -1,0 +1,27 @@
+<html>
+	<head>
+		<title>spdiff.js tester</title>
+		<script src="bundle.js"></script>
+		<script type="text/javascript">
+			function getChanges() {
+			var oldCode = document.getElementById('oldcode').value;
+			var newCode = document.getElementById('newcode').value;
+			
+			console.log("oldCode:");
+			console.log(oldCode);
+			spdiff.tester(oldCode);
+			}
+		</script>
+
+
+	</head>
+	<body>
+		<h1>spdiff.js testing</h1>
+		<h2>Old code</h2>
+		<input id="oldcode" type="text"> </input>
+		<h2>New code</h2>
+		<input id="newcode" type="text"></input>
+		<hr/>
+		<input type="submit" onclick="getChanges()" />
+	</body>
+</html>
