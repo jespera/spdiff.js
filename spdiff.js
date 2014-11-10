@@ -512,11 +512,13 @@ function convertToTerm(ast) {
 						if(prop !== "type" && prop !== "loc" && prop !== "start" && prop !== "end" && prop !== 'typeAnnotation') {
 								if(ast.hasOwnProperty(prop)){
 										var value = ast[prop];
+                    // foo : [a,b,c] => t(foo,[t("[]", [|a|,|b|,|c|]])
 										if(Array.isArray(value)) {
 												var arr = value.map(convertToTerm);
-												elems.push(makeTerm(prop, arr));
+												elems.push(makeTerm(prop, [makeTerm("[]", arr)]));
 										} else {
 												var conv = convertToTerm(value);
+                        // foo : e => t(foo,[e])
 												elems.push(makeTerm(prop, [conv]));
 										}
 
