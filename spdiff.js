@@ -554,6 +554,10 @@ function convertToAST(term) {
 
         var ast = {};
         ast["type"] = term.op;
+				if(term.elems.length === 1 && term.elems[0].op === "[]") {
+						return convertToAST(term.elems[0]);
+				}
+				
         for(var elemIdx in term.elems) {
             var termValue = term.elems[elemIdx];
 						
@@ -595,7 +599,12 @@ spdiff.tester =
 				
 				if(termRewrites) {
 						termRewrites.forEach(function(rewrite) {
-								console.log("::: " + printRewrite(rewrite));
+								var astLHS = convertToAST(rewrite.lhs);
+								var astRHS = convertToAST(rewrite.rhs);
+								console.log("@@ diff @@");
+								console.log("- " + jsParser.prettyPrint(astLHS).code);
+								console.log("+ " + jsParser.prettyPrint(astRHS).code);
+								console.log(" ");
 						});
 				} else {
 						console.log("null rewrites?");
