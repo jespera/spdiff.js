@@ -497,7 +497,7 @@ function str(obj) {
 }
 
 function convertToTerm(ast) {
-    if(!ast) {
+    if(typeof ast === "undefined" || ast == null) {
 				throw "No AST?";
     }
     if(typeof(ast) !== "object") {
@@ -512,6 +512,9 @@ function convertToTerm(ast) {
 						if(prop !== "type" && prop !== "loc" && prop !== "start" && prop !== "end" && prop !== 'typeAnnotation') {
 								if(ast.hasOwnProperty(prop)){
 										var value = ast[prop];
+										if(value == null) {
+												continue;
+										}
                     // foo : [a,b,c] => t(foo,[t("[]", [|a|,|b|,|c|]])
 										if(Array.isArray(value)) {
 												var arr = value.map(convertToTerm);
@@ -599,7 +602,6 @@ spdiff.tester =
 				}
 		};
 
-
+jsParser.parse("function foo() { f(42); }");
 module.exports = spdiff
 
-spdiff.tester();
