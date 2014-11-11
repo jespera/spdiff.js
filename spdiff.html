@@ -4,12 +4,14 @@
 		<script src="bundle.js"></script>
 		<script type="text/javascript">
 			function getChanges() {
-			var oldCode = document.getElementById('oldcode').value;
-			var newCode = document.getElementById('newcode').value;
-			
-			console.log("oldCode:");
-			console.log(oldCode);
-			spdiff.tester(oldCode);
+			var oldCode1 = document.getElementById('oldcode1').value;
+			var newCode1 = document.getElementById('newcode1').value;
+
+			var oldCode2 = document.getElementById('oldcode2').value;
+			var newCode2 = document.getElementById('newcode2').value;
+
+			spdiff.tester([{oldTerm: oldCode1, newTerm: newCode1},
+			               {oldTerm: oldCode2, newTerm: newCode2}]);
 			}
 		</script>
 
@@ -17,11 +19,48 @@
 	</head>
 	<body>
 		<h1>spdiff.js testing</h1>
-		<h2>Old code</h2>
-		<input id="oldcode" type="text"> </input>
-		<h2>New code</h2>
-		<input id="newcode" type="text"></input>
-		<hr/>
+		<div style="float:left;">
+			<h2>Old code 1</h2>
+			<textarea rows="10" cols="50" id="oldcode1" type="text">
+function foo() {
+  console.log("Here we go");
+  var x = foo(42, "p");
+  sideeffecting(x, 10);
+  return x + 42;
+}
+			</textarea>
+		</div>
+		<div style="float:left;">
+			<h2>New code 1</h2>
+			<textarea rows="10" cols="50"  id="newcode1" type="text">
+function foo() {
+  console.log("Here we go");
+  var x = foo(42);
+  sideeffecting(x, 10);
+  return x;
+}
+			</textarea>
+		</div>
+		<div style="clear:both;"></div>
+		<div style="float:left;">
+			<h2>Old code 2</h2>
+			<textarea rows="10" cols="50" id="oldcode2" type="text">
+function bar(p) {
+  sideeffecting(x, 10);
+  return foo(10, p);
+} 
+			</textarea>
+		</div>
+		<div style="float:left;">
+			<h2>New code 2</h2>
+			<textarea rows="10" cols="50"  id="newcode2" type="text">
+function bar(p) {
+  sideeffecting(x, 10);
+  return foo(10);
+} 
+			</textarea>
+		</div>
+		<hr style="clear: both;"/>
 		<input type="submit" onclick="getChanges()" />
 	</body>
 </html>

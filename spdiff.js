@@ -572,33 +572,26 @@ function convertToAST(term) {
 var spdiff = {};
 
 spdiff.tester =
-		function (oldCode, newCode) {
-				if(oldCode) {
-						console.log(jsParser.parse(oldCode));
+		function (changeset) {
+				function convert(change) {
+						var oldAST = jsParser.parse(change.oldTerm);
+						var newAST = jsParser.parse(change.newTerm);
+						return { oldTerm: convertToTerm(oldAST),
+										 newTerm: convertToTerm(newAST) };
 				}
-				var f1_old = jsParser.parse("g(f(42,43))");
-//				console.log(str(f1_old));
-				var f1_new = jsParser.parse("g(f(43))");
-				var f2_old = jsParser.parse("f(44,117)");
-				var f2_new = jsParser.parse("f(117)");
 				
-				var f1_old_conv = convertToTerm(f1_old);
-        console.log("term: " + print(f1_old_conv));
-        var f1_old_back = convertToAST(f1_old_conv);
-				console.log(print(jsParser.print(f1_old_back)));
-				var f1_new_conv = convertToTerm(f1_new);
-				var f2_old_conv = convertToTerm(f2_old);
-				var f2_new_conv = convertToTerm(f2_new);
+				var convChangeSet = changeset.map(convert);
+				var termRewrites = getMergeDiffs(convChangeSet);
+				
 
-
-				var conv_changeset = [{oldTerm: f1_old_conv, newTerm: f1_new_conv},
-															{oldTerm: f2_old_conv, newTerm: f2_new_conv}];
-				var conv_rewrites = getMergeDiffs(conv_changeset);
+				// var conv_changeset = [{oldTerm: f1_old_conv, newTerm: f1_new_conv},
+				// 											{oldTerm: f2_old_conv, newTerm: f2_new_conv}];
+				// var conv_rewrites = getMergeDiffs(conv_changeset);
 				
-				console.log("rewrites:" + conv_rewrites.length);
+				console.log("rewrites:" + termRewrites.length);
 				
-				if(conv_rewrites) {
-						conv_rewrites.forEach(function(rewrite) {
+				if(termRewrites) {
+						termRewrites.forEach(function(rewrite) {
 								console.log("::: " + printRewrite(rewrite));
 						});
 				} else {
