@@ -9,9 +9,12 @@
 
 			var oldCode2 = document.getElementById('oldcode2').value;
 			var newCode2 = document.getElementById('newcode2').value;
+			var outputDiff = document.getElementById('outputDiff');
 
+			outputDiff.innerHTML = "Computing diffs...";
 			spdiff.tester([{oldTerm: oldCode1, newTerm: newCode1},
-			               {oldTerm: oldCode2, newTerm: newCode2}]);
+			               {oldTerm: oldCode2, newTerm: newCode2}],
+			              outputDiff);
 			}
 		</script>
 
@@ -62,5 +65,9 @@ function bar(p) {
 		</div>
 		<hr style="clear: both;"/>
 		<input type="submit" onclick="getChanges()" />
+		<hr />
+		<div id="outputDiff">
+
+		</div>
 	</body>
 </html>

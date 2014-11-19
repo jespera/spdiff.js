@@ -579,15 +579,20 @@ function convertToAST(term) {
 var spdiff = {};
 
 spdiff.tester =
-		function (changeset) {
+		function (changeset, outputNode) {
 				function convert(change) {
 						var oldAST = jsParser.parse(change.oldTerm);
 						var newAST = jsParser.parse(change.newTerm);
 						return { oldTerm: convertToTerm(oldAST),
 										 newTerm: convertToTerm(newAST) };
 				}
+
+				console.log("converting to internal tree-structure");
 				
 				var convChangeSet = changeset.map(convert);
+
+				console.log("merging diffs");
+				
 				var termRewrites = getMergeDiffs(convChangeSet);
 				
 
@@ -596,21 +601,29 @@ spdiff.tester =
 				// var conv_rewrites = getMergeDiffs(conv_changeset);
 				
 				console.log("rewrites:" + termRewrites.length);
-				
-				if(termRewrites) {
-						termRewrites.forEach(function(rewrite) {
-								var astLHS = convertToAST(rewrite.lhs);
-								var astRHS = convertToAST(rewrite.rhs);
-								console.log("@@ diff @@");
-								console.log("- " + jsParser.prettyPrint(astLHS).code);
-								console.log("+ " + jsParser.prettyPrint(astRHS).code);
-								console.log(" ");
-						});
-				} else {
-						console.log("null rewrites?");
+
+				if(outputNode) {
+						outputNode.innerHTML = "";
+						if(termRewrites) {
+								termRewrites.forEach(function(rewrite) {
+										try {
+												var astLHS = convertToAST(rewrite.lhs);
+												var ppLHS = jsParser.prettyPrint(astLHS).code;
+												var astRHS = convertToAST(rewrite.rhs);
+												var ppRHS = jsParser.prettyPrint(astRHS).code;
+												var diff = "@@ @@<br/>";
+												diff += "- " + ppLHS + "<br/>";
+												diff += "+ " + ppRHS + "<br/>";
+												diff += "<br/>";
+												outputNode.innerHTML += diff;
+										} catch(err) {
+										}
+								});
+						} else {
+								console.log("null rewrites?");
+						}
 				}
 		};
 
-jsParser.parse("function foo() { f(42); }");
 module.exports = spdiff
 
