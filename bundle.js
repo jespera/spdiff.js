@@ -16159,9 +16159,15 @@ var murmurHash3 = require("murmurhash3js");
 var jsParser = require('recast')
 //var jsParser = require('acorn');
 
+function str(obj) {
+		return JSON.stringify(obj,null,2);
+}
+
 function hashCode(s){
 		if(!s.split) {
-				s = s.toString();
+				// we don't want numbers and and their string representation
+				// to to hash to the same value
+				s = "\"" + s.toString() + "\"";
 		}
 		return murmurHash3.x86.hash32(s);
 		// return s.split("").reduce(function(a,b){
@@ -16234,12 +16240,12 @@ function equalsTerm(t1, t2) {
 
 // lookup 'meta' in 'sub'
 function lookupMeta(meta, sub) {
-		return sub[meta.elems[0]];
+		return sub[meta.hkey];
 }
 
 // updates 'sub' to have a binding from 'meta' to 'term'
 function bindTerm(meta,term,sub){
-		sub[meta.elems[0]] = term;
+		sub[meta.hkey] = term;
 }
 
 // Apply substitution in 'pattern' with bindings from 'sub'
@@ -16273,12 +16279,12 @@ function areComparable(tree1, tree2) {
 function computeMatches(pattern, tree) {
 		var env = {};
 		function match(pattern, tree) {
-				if(pattern === tree) {
+				if(equalsTerm(pattern, tree)) {
 						return;
 				}
 				if(isMeta(pattern)) {
 						var boundTerm = lookupMeta(pattern, env);
-						if(!boundTerm) {
+						if(typeof boundTerm === "undefined" || boundTerm == null) {
 								bindTerm(pattern, tree, env);
 								return;
 						}
@@ -16348,7 +16354,7 @@ function mergeTerms(tree1, tree2, startEnv) {
 						return notDone(t1.op);
 				}
 				var boundMeta = env[[getHKey(t1),getHKey(t2)]];
-				if(boundMeta) {
+				if(typeof boundMeta !== undefined && boundMeta != null) {
 						return isDone(boundMeta);
 				}
 				
@@ -16379,12 +16385,12 @@ function mergeRewrites(rw1, rw2) {
 // apply a term-rewrite, lhs=>rhs such that every subterm, sub of
 // tree where computeMatches(lhs,sub) = env and and <> null is
 // replaced by applyPattern(rhs, env)
-function applyRewrite(patch, tree) {
+function applyRewrite(patch, origTree) {
 		function apply(tree) {
 				var env = computeMatches(patch.lhs, tree);
-				if(env) {
+				if(env !== null && env) {
 						return applyPattern(patch.rhs, env);
-				} 
+				}
 				if(tree.elems) {
 						return makeTerm(tree.op, tree.elems.map(apply));
 				}
@@ -16393,7 +16399,7 @@ function applyRewrite(patch, tree) {
 				
 				
 		}
-		return apply(tree);
+		return apply(origTree);
 }
 
 function treeSize(tree) {
@@ -16512,6 +16518,9 @@ function print(origTerm) {
 
 function isSafe(rewrite, srcTerm, tgtTerm) {
 		var midTerm = applyRewrite(rewrite, srcTerm);
+		if(equalsTerm(srcTerm, midTerm)) {
+				return false;
+		}
 		return editDist(srcTerm, midTerm) + editDist(midTerm,tgtTerm) === editDist(srcTerm,tgtTerm);
 }
 
@@ -16610,6 +16619,7 @@ function isSubRewrite(changeset) { // changeset = [ {oldTerm:term,newTerm:term} 
 // - don't merge with more changes if merged change is subpatch of already found
 
 function getMergeDiffs(changeset) {
+		console.log("computing pair diffs");
 		var simpleDiffs = changeset.map(function(change) {
 				// somewhat slow 
 				return getSimpleDiffs(change.oldTerm, change.newTerm);
@@ -16619,26 +16629,30 @@ function getMergeDiffs(changeset) {
 		var mergedChanges = [];
 		function mergeFold(curMerge, otherDiffs) {
 				if(otherDiffs.length == 0) {
+						// check safety
+						var newMergeSafe = changeset.every(function(change) {
+								return isSafe(curMerge, change.oldTerm, change.newTerm);
+						});
+						if(!newMergeSafe) {
+								return;
+						}
+						
 						mergedChanges.push(curMerge);
 				} else {
 						var rewrites = otherDiffs[0];
 						rewrites.forEach(function (rewrite) {
 								var newMerge = curMerge ? mergeRewrites(curMerge, rewrite) : rewrite;
-								// todo
-								// check safety
-								var newMergeSafe = changeset.every(function(change) {
-										return isSafe(newMerge, change.oldTerm, change.newTerm);
-								});
-								if(!newMergeSafe) {
+								
+								if(newMerge && newMerge.lhs && isMeta(newMerge.lhs)) {
 										return;
 								}
-		    				
 								// check not subpatch of already found patch
 								// maybe not?
 								mergeFold(newMerge, otherDiffs.slice(1));
 						});
 				}
 		}
+		console.log("merging diffs");
 		mergeFold(null, simpleDiffs);
 		// filter out found changes that are not smalles (unless we do that in the "base-case"
 		return mergedChanges;
@@ -16646,11 +16660,6 @@ function getMergeDiffs(changeset) {
 
 function printRewrite(rw) {
 		return print(rw.lhs) + " => " + print(rw.rhs);
-}
-
-
-function str(obj) {
-		return JSON.stringify(obj,null,2);
 }
 
 function convertToTerm(ast) {
@@ -16779,11 +16788,35 @@ spdiff.tester =
 						} else {
 								console.log("null rewrites?");
 						}
+				} else {
+						if(termRewrites) {
+								termRewrites.forEach(function(re) {
+										console.log("@@ @@");
+										console.log("- " + print(re.lhs));
+										console.log("+ " + print(re.rhs));
+										console.log("");
+								});
+						} else {
+								console.log("No rewrites found");
+						}
 				}
 		};
 
 module.exports = spdiff
 
+var debugging = true;
+if(debugging) {
+		var lhs1 = "f(10)";
+		var rhs1 = "f(10,10)";
+
+		var lhs2 = "f(11)";
+		var rhs2 = "f(11,11)"
+
+		var changeset = [{oldTerm: lhs1, newTerm: rhs1},
+										 {oldTerm: lhs2, newTerm: rhs2}];
+		
+		spdiff.tester(changeset);
+}
 
 },{"murmurhash3js":1,"recast":12}],40:[function(require,module,exports){
 
