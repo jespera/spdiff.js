@@ -16804,7 +16804,7 @@ spdiff.tester =
 
 module.exports = spdiff
 
-var debugging = true;
+var debugging = false;
 if(debugging) {
 		var lhs1 = "f(10)";
 		var rhs1 = "f(10,10)";
