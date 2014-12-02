@@ -455,6 +455,67 @@ function isSubRewrite(changeset) { // changeset = [ {oldTerm:term,newTerm:term} 
 		}
 }
 
+function isUndef(o) {
+		return typeof o === "undefined" || o === null;
+}
+
+function getSubTerms(term) {
+		var subtermSet = {};
+		function loop(nextTerm) {
+				if(isUndef(nextTerm)) {
+						return;
+				}
+				var key;
+				if(isTerm(nextTerm)){
+						key = getHKey(nextTerm);
+						if(nextTerm.elems) {
+								nextTerm.elems.forEach(loop);
+						}
+				} else if(!isUndef(nextTerm)) {
+						key = hashCode(nextTerm);
+				}
+				if(isUndef(subtermSet[key])) {
+						subtermSet[key] = nextTerm;
+				} 
+		}
+		
+		loop(term);
+		
+		var subterms = [];
+		for(var key in subtermSet) {
+				if(subtermSet.hasOwnProperty(key)) {
+						subterms.push(subtermSet[key]);
+				}
+		}
+		return subterms;
+}
+
+function getCommonPatterns(lhss) {
+		// a list of lists of subterms
+		var subtermLists = lhss.map(getSubTerms);
+		var common = [];
+		function loop(curPat, subtermListsTail) {
+				if(subtermListsTail.length === 0) {
+						// TODO
+						// - check for existance in list
+						// - check infeasible pattern
+						common.push(curPat);
+				} else {
+						var headTerms = subtermListsTail[0];
+						headTerms.forEach(function(term){
+								var newPat = curPat ? mergeTerms(curPat, term) : term;
+								if(isMeta(newPat)) {
+										return;
+								}
+								loop(newPat, subtermListsTail.slice(1));
+						});
+				}
+		}
+		loop(null, subtermLists);
+		return common;
+}
+
+
 // given changeset:
 // map each changeset to set of simple changes
 // try to merge simple changes from all elements in changeset
@@ -462,14 +523,28 @@ function isSubRewrite(changeset) { // changeset = [ {oldTerm:term,newTerm:term} 
 // - don't merge with more changes if merged change is subpatch of already found
 
 function getMergeDiffs(changeset) {
+		var lhss = changeset.map(function(pair) { return pair.oldTerm; });
+		var commonPats = getCommonPatterns(lhss);
+		commonPats.forEach(function(pat) {
+				console.log(">>> " + print(pat));
+		});
 		console.log("computing pair diffs");
 		var simpleDiffs = changeset.map(function(change) {
 				// somewhat slow 
-				return getSimpleDiffs(change.oldTerm, change.newTerm);
+				return getSimpleDiffs(change.oldTerm, change.newTerm)
+						.filter(function(change) {
+								return commonPats.some(function(pat) {
+										return computeMatches(pat, change.lhs);
+								});
+						});
+				
 				// faster, but fewer results
 				//return getMinimalDiffs(change.oldTerm, change.newTerm);
 		});
 		var mergedChanges = [];
+
+
+		
 		function mergeFold(curMerge, otherDiffs) {
 				if(otherDiffs.length == 0) {
 						// check safety
@@ -591,8 +666,9 @@ spdiff.tester =
 		function (changeset, outputNode) {
 				function convert(change) {
 						var oldAST = jsParser.parse(change.oldTerm);
+						var lhs = convertToTerm(oldAST);
 						var newAST = jsParser.parse(change.newTerm);
-						return { oldTerm: convertToTerm(oldAST),
+						return { oldTerm: lhs,
 										 newTerm: convertToTerm(newAST) };
 				}
 
@@ -649,8 +725,8 @@ module.exports = spdiff
 
 var debugging = false;
 if(debugging) {
-		var lhs1 = "f(10)";
-		var rhs1 = "f(10,10)";
+		var lhs1 = "return f(10)";
+		var rhs1 = "return f(10,10)";
 
 		var lhs2 = "f(11)";
 		var rhs2 = "f(11,11)"
