@@ -25,42 +25,26 @@
 		<div style="float:left;">
 			<h2>Old code 1</h2>
 			<textarea rows="10" cols="50" id="oldcode1" type="text">
-function foo() {
-  console.log("Here we go");
-  var x = foo(42, "p");
-  sideeffecting(x, 10);
-  return x + 42;
-}
+				$("a.foo").die("click")
 			</textarea>
 		</div>
 		<div style="float:left;">
 			<h2>New code 1</h2>
 			<textarea rows="10" cols="50"  id="newcode1" type="text">
-function foo() {
-  console.log("Here we go");
-  var x = foo(42);
-  sideeffecting(x, 10);
-  return x;
-}
+				$(document).off("click", "a.foo")
 			</textarea>
 		</div>
 		<div style="clear:both;"></div>
 		<div style="float:left;">
 			<h2>Old code 2</h2>
 			<textarea rows="10" cols="50" id="oldcode2" type="text">
-function bar(p) {
-  sideeffecting(x, 10);
-  return foo(10, p);
-} 
+				$("b.bar").die("click")
 			</textarea>
 		</div>
 		<div style="float:left;">
 			<h2>New code 2</h2>
 			<textarea rows="10" cols="50"  id="newcode2" type="text">
-function bar(p) {
-  sideeffecting(x, 10);
-  return foo(10);
-} 
+				$(document).off("click", "b.bar")
 			</textarea>
 		</div>
 		<hr style="clear: both;"/>
