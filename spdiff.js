@@ -584,8 +584,17 @@ function getMergeDiffs(changeset) {
 		}
 		console.log("merging diffs");
 		mergeFold(null, simpleDiffs);
-		// filter out found changes that are not smalles (unless we do that in the "base-case"
-		return mergedChanges;
+		// filter out found changes that are not smallest (unless we do that in the "base-case"
+
+		var subPatch = isSubRewrite(changeset);
+
+		var largestChanges =
+			mergedChanges.filter(function(patch) {
+				return mergedChanges.every(function(other) {
+					return subPatch(other, patch);
+				});
+			});
+		return largestChanges;
 }
 
 function printRewrite(rw) {
