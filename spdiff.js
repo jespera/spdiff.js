@@ -449,7 +449,7 @@ function getSimpleDiffs(srcTerm, tgtTerm) {
 function isSubRewrite(changeset) { // changeset = [ {oldTerm:term,newTerm:term} ]
 		return function(lhsRewrite, rhsRewrite) {
 				return changeset.every(function(change) {
-						var midTerm = applyRewrite(rhsRewrite(change.newTerm));
+						var midTerm = applyRewrite(rhsRewrite, change.oldTerm);
 						return isSafe(lhsRewrite, change.oldTerm, midTerm);
 				});
 		}
