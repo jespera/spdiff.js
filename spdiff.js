@@ -1,3 +1,5 @@
+'use strict';
+
 var murmurHash3 = require("murmurhash3js");
 var jsParser = require('recast')
 //var jsParser = require('acorn');
@@ -68,6 +70,10 @@ function makeMeta() {
 		var m = nextMeta;
 		nextMeta = nextMeta + 1;
 		return makeTerm("meta", [m]);
+}
+
+function makeMetaAt(num) {
+	return makeTerm("meta", [num]);
 }
 
 function isMeta(term) {
@@ -515,6 +521,13 @@ function getCommonPatterns(lhss) {
 		return common;
 }
 
+function find(pred, ls) {
+	for(var ix in ls) {
+		if(pred(ls[ix])) {
+			return ls[ix];
+		}
+	}
+}
 
 // given changeset:
 // map each changeset to set of simple changes
@@ -588,13 +601,13 @@ function getMergeDiffs(changeset) {
 
 		var subPatch = isSubRewrite(changeset);
 
-		var largestChanges =
-			mergedChanges.filter(function(patch) {
+		var largestChange =
+			find(function(patch) {
 				return mergedChanges.every(function(other) {
 					return subPatch(other, patch);
 				});
-			});
-		return largestChanges;
+			}, mergedChanges);
+		return [largestChange];
 }
 
 function printRewrite(rw) {
