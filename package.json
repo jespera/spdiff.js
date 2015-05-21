@@ -1,0 +1,24 @@
+{
+  "name": "spdiff.js",
+  "version": "0.0.0",
+  "description": "spdiff.js =========",
+  "main": "spdiff.js",
+  "dependencies": {
+    "recast": "~0.10.12",
+    "murmurhash3js": "~3.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "bundle" : "browserify -o bundle.js -s spdiff spdiff.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jespera/spdiff.js.git"
+  },
+  "author": "jespera",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jespera/spdiff.js/issues"
+  },
+  "homepage": "https://github.com/jespera/spdiff.js"
+}
