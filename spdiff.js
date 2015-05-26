@@ -9,12 +9,11 @@ function str(obj) {
 }
 
 function hashCode(s){
-		if(!s.split) {
+		var valueToHash =
+			!s.split ? "\"" + s.toString() + "\"" : s;
 				// we don't want numbers and and their string representation
-				// to to hash to the same value
-				s = "\"" + s.toString() + "\"";
-		}
-		return murmurHash3.x86.hash32(s);
+				// to hash to the same value
+		return murmurHash3.x86.hash32(valueToHash);
 		// return s.split("").reduce(function(a,b){
 		//     a=((a<<5)-a)+b.charCodeAt(0);
 		//     return a&a
@@ -577,7 +576,7 @@ function getMergeDiffs(changeset) {
 								return isSafe(curMerge, change.oldTerm, change.newTerm);
 						});
 						if(!newMergeSafe) {
-								return;
+							return;
 						}
 
 						mergedChanges.push(curMerge);
@@ -601,13 +600,20 @@ function getMergeDiffs(changeset) {
 
 		var subPatch = isSubRewrite(changeset);
 
-		var largestChange =
-			find(function(patch) {
-				return mergedChanges.every(function(other) {
-					return subPatch(other, patch);
-				});
-			}, mergedChanges);
-		return [largestChange];
+		var largestChanges =
+			mergedChanges.filter(function (patch) {
+					return mergedChanges.every(function(other) {
+						return subPatch(other, patch);
+			})
+		});
+			// find(function(patch) {
+			// 	return mergedChanges.every(function(other) {
+			// 		return subPatch(other, patch);
+			// 	});
+			// }, mergedChanges);
+
+		// return largestChanges;
+		return mergedChanges;
 }
 
 function printRewrite(rw) {
@@ -769,13 +775,15 @@ spdiff.tester =
 
 module.exports = spdiff
 
-var debugging = false;
+var debugging = true;
 if(debugging) {
-		var lhs1 = "return f(10)";
-		var rhs1 = "return f(10,10)";
+		var lhs1 = "f(bug(42),10)";
+		var rhs1 = "g(fix(42),10)";
 
-		var lhs2 = "f(11)";
-		var rhs2 = "f(11,11)"
+		var lhs2 = "f(11,10)";
+		var rhs2 = "g(11,10)"
+
+		// f(X,10) => g(X,10)
 
 		var changeset = [{oldTerm: lhs1, newTerm: rhs1},
 										 {oldTerm: lhs2, newTerm: rhs2}];
