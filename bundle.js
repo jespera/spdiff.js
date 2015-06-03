@@ -20921,11 +20921,87 @@ function mkRewrite(lhs, rhs) {
 		return rewrite;
 }
 
+function getMetas(t) {
+	var metas = [];
+	function loop(t) {
+		if(isMeta(t)) {
+			metas.push(t);
+		} else {
+			if(t && t.op && t.elems.length > 0) {
+				t.elems.forEach(loop);
+			}
+ 		}
+	}
+	loop(t);
+	return metas;
+}
+
+function metaReplace(rewrite, term) {
+	if(equalsTerm(rewrite.lhs, term)) {
+		return rewrite.rhs;
+	}
+	if(isTerm(term)) {
+		return makeTerm(term.op, term.elems.map(function(t) {
+			return metaReplace(rewrite, t);
+		}));
+	} else {
+		return term;
+	}
+}
+
 function mergeRewrites(rw1, rw2) {
 		var mergeEnv = {};
+
 		var mergedLHS = mergeTerms(rw1.lhs, rw2.lhs, mergeEnv);
 		var mergedRHS = mergeTerms(rw1.rhs, rw2.rhs, mergeEnv);
-		return mkRewrite(mergedLHS, mergedRHS);
+		var lhsMetas = getMetas(mergedLHS);
+		var rhsMetas = getMetas(mergedRHS);
+		var unboundMetas = 
+			rhsMetas.filter(function (rhsMeta) {
+				return lhsMetas.every(function(lhsMeta) {
+					return !equalsTerm(lhsMeta, rhsMeta);
+				})
+			});
+		if(unboundMetas.length == 0) {
+			return mkRewrite(mergedLHS, mergedRHS);
+		} else {
+			// some RHS meta is unbound
+			// console.log("some unbound metas for " + print(mergedLHS) + " => " + print(mergedRHS));
+			// for each unbound meta:
+			var resultRHS = mergedRHS;
+			unboundMetas.forEach(function (meta) {
+				for(var key in mergeEnv) {
+					var thisMeta = mergeEnv[key];
+					if(equalsTerm(mergeEnv[key], meta)) {
+						var hkeys = key.split(",");
+						var left = hkeys[0];
+						var right = hkeys[1];
+						for(var otherKey in mergeEnv) {
+							var oMeta = mergeEnv[otherKey];
+							// console.log("mergeEnv[otherKey] = " + str(oMeta));
+							var otherHKeys = otherKey.split(",");
+							var otherLeft = otherHKeys[0];
+							var otherRight = otherHKeys[1];
+							if(otherLeft === left && otherRight !== right ||
+								 otherRight === right && otherLeft !== left) {
+								// console.log("other: " + str(otherKey));
+								// console.log("this : " + str(key));
+								// console.log("mergeEnv " + str(mergeEnv));
+								// console.log("apply rewrite: " + printRewrite(mkRewrite(meta, oMeta)));
+								// console.log("to : " + print(resultRHS));
+								resultRHS = metaReplace(mkRewrite(meta, oMeta), resultRHS);
+								// console.log("resultRHS: " + print(resultRHS));
+								return;
+							}
+						}
+					}
+				}
+			});
+			return mkRewrite(mergedLHS, resultRHS);
+			// - find the pair of terms it was bound to in mergeEnv
+			// - try to find another pair such that one equals one from the previous pair
+			// - get the meta the new pair binds to and replace old meta with newly found
+		}
 }
 
 // apply a term-rewrite, lhs=>rhs such that every subterm, sub of
@@ -21141,7 +21217,11 @@ function getSimpleDiffs(srcTerm, tgtTerm) {
 										get(srcElem, tgtElem);
 								}
 						)
-				}
+				} else if ( src && tgt && src.elems && tgt.elems &&
+					          src.op === tgt.op &&
+                    src.elems.length != tgt.elems.length ) {
+
+        }
 		}
 		get(srcTerm, tgtTerm);
 		return diffs;
@@ -21242,6 +21322,7 @@ function getMergeDiffs(changeset) {
 		var simpleDiffs = changeset.map(function(change) {
 				// somewhat slow
 				return getSimpleDiffs(change.oldTerm, change.newTerm)
+        //return getMinimalDiffs(change.oldTerm, change.newTerm)
 						.filter(function(change) {
 							// console.log("testing simple: " + printRewrite(change));
 							var isGood = commonPats.some(function(pat) {
@@ -21265,8 +21346,6 @@ function getMergeDiffs(changeset) {
 		// });
 		var mergedChanges = [];
 
-
-
 		function mergeFold(curMerge, otherDiffs) {
 				if(otherDiffs.length == 0) {
 						// check safety
@@ -21274,7 +21353,7 @@ function getMergeDiffs(changeset) {
 								return isSafe(curMerge, change.oldTerm, change.newTerm);
 						});
 						if(!newMergeSafe) {
-								return;
+							return;
 						}
 
 						mergedChanges.push(curMerge);
@@ -21282,12 +21361,13 @@ function getMergeDiffs(changeset) {
 						var rewrites = otherDiffs[0];
 						rewrites.forEach(function (rewrite) {
 								var newMerge = curMerge ? mergeRewrites(curMerge, rewrite) : rewrite;
-
+								if(!newMerge) {
+									return;
+								}
 								if(newMerge && newMerge.lhs && isMeta(newMerge.lhs)) {
 										return;
 								}
-								// check not subpatch of already found patch
-								// maybe not?
+								// TODO: consider to check not subpatch of already found patch 
 								mergeFold(newMerge, otherDiffs.slice(1));
 						});
 				}
@@ -21311,6 +21391,7 @@ function getMergeDiffs(changeset) {
 			// }, mergedChanges);
 
 		return largestChanges;
+		//return mergedChanges;
 }
 
 function printRewrite(rw) {
@@ -21472,13 +21553,15 @@ spdiff.tester =
 
 module.exports = spdiff
 
-var debugging = false;
+var debugging = true;
 if(debugging) {
-		var lhs1 = "return f(10)";
-		var rhs1 = "return f(10,10)";
+		var lhs1 = "f(bug(42),10)";
+    var rhs1 = "g(fix(42))";
 
-		var lhs2 = "f(11)";
-		var rhs2 = "f(11,11)"
+		var lhs2 = "f(11,10)";
+		var rhs2 = "g(11)";
+
+		// f(X,10) => g(X,10)
 
 		var changeset = [{oldTerm: lhs1, newTerm: rhs1},
 										 {oldTerm: lhs2, newTerm: rhs2}];
