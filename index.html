@@ -4,17 +4,38 @@
 		<script src="bundle.js"></script>
 		<script type="text/javascript">
 			function getChanges() {
-			var oldCode1 = document.getElementById('oldcode1').value;
-			var newCode1 = document.getElementById('newcode1').value;
+				var oldCode1 = document.getElementById('oldcode1').value;
+				var newCode1 = document.getElementById('newcode1').value;
 
-			var oldCode2 = document.getElementById('oldcode2').value;
-			var newCode2 = document.getElementById('newcode2').value;
-			var outputDiff = document.getElementById('outputDiff');
+				var oldCode2 = document.getElementById('oldcode2').value;
+				var newCode2 = document.getElementById('newcode2').value;
+				var outputDiff = document.getElementById('outputDiff');
 
-			outputDiff.innerHTML = "Computing diffs...";
-			spdiff.tester([{oldTerm: oldCode1, newTerm: newCode1},
-			               {oldTerm: oldCode2, newTerm: newCode2}],
-			              outputDiff);
+				outputDiff.innerHTML = "Computing diffs...";
+				var changeset = [
+					{oldTerm: oldCode1, newTerm: newCode1},
+					{oldTerm: oldCode2, newTerm: newCode2}
+				];
+				var rewrites = spdiff.findLargestCommonRewrites(changeset);
+				if(rewrites) {
+					outputDiff.innerHTML = "";
+					rewrites.forEach(function(rewrite) {
+					try {
+							var ppLHS = spdiff.jsParser.prettyPrint(rewrite.lhs).code;
+							var ppRHS = spdiff.jsParser.prettyPrint(rewrite.rhs).code;
+							var diff = "@@ @@<br/>";
+							diff += "- " + ppLHS + "<br/>";
+							diff += "+ " + ppRHS + "<br/>";
+							diff += "<br/>";
+							outputDiff.innerHTML += diff;
+					} catch(err) {
+						// console.log("failed to conv: " + printRewrite(rewrite));
+					}
+					});
+					console.log("done outputting");
+				} else {
+					console.log("No rewrites!");
+				}
 			}
 		</script>
 

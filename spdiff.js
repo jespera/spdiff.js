@@ -258,7 +258,7 @@ function mergeRewrites(rw1, rw2) {
 		var mergedRHS = mergeTerms(rw1.rhs, rw2.rhs, mergeEnv);
 		var lhsMetas = getMetas(mergedLHS);
 		var rhsMetas = getMetas(mergedRHS);
-		var unboundMetas = 
+		var unboundMetas =
 			rhsMetas.filter(function (rhsMeta) {
 				return lhsMetas.every(function(lhsMeta) {
 					return !equalsTerm(lhsMeta, rhsMeta);
@@ -669,7 +669,7 @@ function getMergeDiffs(changeset) {
 								if(newMerge && newMerge.lhs && isMeta(newMerge.lhs)) {
 										return;
 								}
-								// TODO: consider to check not subpatch of already found patch 
+								// TODO: consider to check not subpatch of already found patch
 								mergeFold(newMerge, otherDiffs.slice(1));
 						});
 				}
@@ -786,87 +786,34 @@ function convertToAST(term) {
         return ast;
     }
     return term;
-
 }
 
 var spdiff = {};
 
-spdiff.tester =
-		function (changeset, outputNode) {
-				function convert(change) {
-						var oldAST = jsParser.parse(change.oldTerm);
-						var lhs = convertToTerm(oldAST);
-						var newAST = jsParser.parse(change.newTerm);
-						return { oldTerm: lhs,
-										 newTerm: convertToTerm(newAST) };
-				}
+spdiff.applyRewrite = function(rewrite, srcAst) {
+	return convertToAST(applyRewrite(rewrite, convertToTerm));
+}
 
-				console.log("converting to internal tree-structure");
+spdiff.findLargestCommonRewrites = function(changeset) {
+	function convert(change) {
+			var oldAST = jsParser.parse(change.oldTerm);
+			var newAST = jsParser.parse(change.newTerm);
+			return { oldTerm: convertToTerm(oldAST),
+							 newTerm: convertToTerm(newAST) };
+	}
+	var convChangeSet = changeset.map(convert);
+	var termRewrites = getMergeDiffs(convChangeSet);
 
-				var convChangeSet = changeset.map(convert);
+	return termRewrites.map(function (rewrite) {
+		try {
+			return mkRewrite( convertToAST(rewrite.lhs),
+			                  convertToAST(rewrite.rhs) );
+		} catch (err) {
 
-				console.log("merging diffs");
+		}
+	}).filter(function (e) { return e;});
+}
 
-				var termRewrites = getMergeDiffs(convChangeSet);
-
-
-				// var conv_changeset = [{oldTerm: f1_old_conv, newTerm: f1_new_conv},
-				// 											{oldTerm: f2_old_conv, newTerm: f2_new_conv}];
-				// var conv_rewrites = getMergeDiffs(conv_changeset);
-
-				console.log("rewrites:" + termRewrites.length);
-				// termRewrites.forEach( function(rw) {
-				// 	console.log("rw:: " + printRewrite(rw));
-				// });
-				if(outputNode) {
-						outputNode.innerHTML = "";
-						if(termRewrites) {
-								termRewrites.forEach(function(rewrite) {
-										try {
-												var astLHS = convertToAST(rewrite.lhs);
-												var ppLHS = jsParser.prettyPrint(astLHS).code;
-												var astRHS = convertToAST(rewrite.rhs);
-												var ppRHS = jsParser.prettyPrint(astRHS).code;
-												var diff = "@@ @@<br/>";
-												diff += "- " + ppLHS + "<br/>";
-												diff += "+ " + ppRHS + "<br/>";
-												diff += "<br/>";
-												outputNode.innerHTML += diff;
-										} catch(err) {
-											console.log("failed to conv: " + printRewrite(rewrite));
-										}
-								});
-						} else {
-								console.log("null rewrites?");
-						}
-				} else {
-						if(termRewrites) {
-								termRewrites.forEach(function(re) {
-										console.log("@@ @@");
-										console.log("- " + print(re.lhs));
-										console.log("+ " + print(re.rhs));
-										console.log("");
-								});
-						} else {
-								console.log("No rewrites found");
-						}
-				}
-		};
+spdiff.jsParser = jsParser;
 
 module.exports = spdiff
-
-var debugging = true;
-if(debugging) {
-		var lhs1 = "f(bug(42),10)";
-    var rhs1 = "g(fix(42))";
-
-		var lhs2 = "f(11,10)";
-		var rhs2 = "g(11)";
-
-		// f(X,10) => g(X,10)
-
-		var changeset = [{oldTerm: lhs1, newTerm: rhs1},
-										 {oldTerm: lhs2, newTerm: rhs2}];
-
-		spdiff.tester(changeset);
-}
