@@ -16,6 +16,11 @@
 
 		<link rel="stylesheet" href="css/reveal.css">
 		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+		<style>
+			blockquote {
+				text-align: left;
+			}
+		</style>
 
 		<!-- Code syntax highlighting -->
 		<link rel="stylesheet" href="lib/css/zenburn.css">
@@ -29,6 +34,9 @@
 			document.getElementsByTagName( 'head' )[0].appendChild( link );
 		</script>
 
+		<script src="../../bundle.js"></script>
+
+
 		<!--[if lt IE 9]>
 		<script src="lib/js/html5shiv.js"></script>
 		<![endif]-->
@@ -39,21 +47,147 @@
 		<div class="reveal">
 			<!-- Any section element inside of this container is displayed as a slide -->
 			<div class="slides">
+
+				<!-- title slide -->
+
 				<section>
 					<h1>spdiff.js</h1>
 					<h3>Fully automated API updates</h3>
 				</section>
 
-				<section>
-					<h2>Example</h2>
-					<p>From stackoverflow:</p>
-					<blockquote>
-						I recently updated jQuery from 1.8 to 2.1. I suddenly discovered that the .live() stops working.
-I get the error TypeError: $(...).live is not a function.
+				<!-- work in progress -->
 
-Is there any method I can use in place of .live()?
-					</blockquote>
-					<p>(<a href="http://stackoverflow.com/questions/14354040/jquery-1-9-live-is-not-a-function">source</a>)</p>
+				<section>
+					<h2>Warning</h2>
+					<img src="images/nothittingball.gif" />
+					<h4>Work in progress</h4>
+				</section>
+
+				<!-- introduction to API update problem/collateral evolution -->
+
+				<section>
+
+					<!-- <section>
+						<h2>What is spdiff.js?</h2>
+						<p>spdiff.js is a tool that finds <em>common changes</em> in changed
+							code and presents the common changes in a <em>compact</em> manner.
+						</p>
+						<p>Originates in the Coccinelle project (<a href="http://coccinelle.lip6.fr/">website</a>).</p>
+					</section> -->
+					<section>
+						<h3>The problem</h3>
+						<blockquote>
+							http://stackoverflow.com/search?q=jquery+updated+1.9
+						</blockquote>
+					</section>
+					<section>
+						<h2>Example</h2>
+						<p>From stackoverflow:</p>
+						<blockquote style="text-align: left;">
+							I recently updated jQuery from 1.8 to 2.1. I suddenly discovered that the .live() stops working.
+							I get the error TypeError: $(...).live is not a function.
+							<br />
+							Is there any method I can use in place of .live()?
+						</blockquote>
+						<p>(<a href="http://stackoverflow.com/questions/14354040/jquery-1-9-live-is-not-a-function">source</a>)</p>
+					</section>
+					<section>
+						<h4>When library API is updated, either:</h4>
+						<ol>
+							<li>your code still works (phew)</li>
+							<li>somewhere a breaking change was introduced</li>
+						</ol>
+					</section>
+
+					<section>
+						What are the answers on stackoverflow?
+					</section>
+
+					<section>
+						<blockquote>
+							Did you look at the (jquery) <a href="https://jquery.com/upgrade-guide/1.9/">upgrade guide</a>?
+						</blockquote>
+					</section>
+
+
+					<!-- <section>
+						<h2>More jQuery examples</h2>
+						<blockquote>
+							The <code>.die()</code> method has been deprecated since jQuery 1.7
+							and has been removed in 1.9. We recommend upgrading code
+							to use the <code>.off()</code> method instead
+						</blockquote>
+					</section> -->
+					<section>
+						<h1>???</h1>
+						<video autoplay loop>
+							<source src="images/idontgetit.webm">
+						</video>
+					</section>
+					<section>
+						<h2>jQuery upgrade guide</h2>
+						<blockquote>
+							The <code>.live()</code> method has been deprecated since jQuery 1.7
+							and has been removed in 1.9. We recommend upgrading code
+							to use the <code>.on()</code> method instead. To exactly match
+							<code>$("a.foo").live("click", fn)</code>, for example, you can write
+							<code>$(document).on("click", "a.foo", fn)</code>.
+						</blockquote>
+					</section>
+					<section>
+						<h3>jQuery &lt; 1.8</h3>
+						<pre><code id="code1" data-trim contenteditable>
+$("a.foo").live("click", someFun)
+						</code></pre>
+						<h3>...upgraded</h3>
+						<pre><code data-trim contenteditable>
+								$(document).on("click", "a.foo", someFun)</code></pre>
+						<p>But that just takes care of <em>one location</em></p>
+					</section>
+
+					<section>
+						<h3>Updating all locations</h3>
+						<ol>
+							<li>Search/replace from editor (maybe even regexp)</li>
+							<li>Editor refactoring support</li>
+							<li>Command line tools: <code>grep, awk, sed ...</code></li>
+							<li>Dedicated tools: <a href="http://www.graspjs.com/">graspjs</a>, <a href="http://www.brics.dk/jsrefactor/">JSRefactor</a>, ...</li>
+						</ol>
+					</section>
+
+					<section>
+						<h4>There has to be a better way!</h4>
+						<video autoplay loop>
+							<source src="images/fall.webm">
+						</video>
+					</section>
+					<!-- <section>
+						<h3>jQuery &lt; 1.8</h3>
+						<pre><code id="code1" data-trim contenteditable>
+$("a.foo").die("click")
+						</code></pre>
+						<h3>...upgraded</h3>
+						<pre><code data-trim contenteditable>
+								$(document).off("click", "a.foo")</code></pre>
+					</section> -->
+
+				</section>
+
+				<!-- towards a solution: generic patch language -->
+				<section>
+					<section>
+						<h3>Coccinelle</h3>
+					</section>
+					<section>
+						<h2>Collateral evolution</h2>
+						<img style="border: none; background: transparent;" src="collateral-evol.svg" />
+					</section>
+					<section>
+						<h3>Semantic patches</h3>
+
+					</section>
+
+
 				</section>
 
 			</div>
