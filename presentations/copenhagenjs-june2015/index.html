@@ -35,6 +35,50 @@
 		</script>
 
 		<script src="../../bundle.js"></script>
+		<script type="text/javascript">
+function getCode(id) {
+return document.getElementById(id).textContent;
+}
+function spdiffEx(idSuffix1, idSuffix2) {
+
+var oldCode1 = document.getElementById("old" + idSuffix1).textContent;
+var newCode1 = document.getElementById("new" + idSuffix1).textContent;
+
+var oldCode2 = document.getElementById("old" + idSuffix2).textContent;
+var newCode2 = document.getElementById("new" + idSuffix2).textContent;
+
+var changeset =
+[
+{oldTerm: oldCode1, newTerm: newCode1},
+{oldTerm: oldCode2, newTerm: newCode2}
+];
+console.log("running");
+var outputDiff = document.getElementById("resultEx" + idSuffix1);
+outputDiff.innerHTML = "";
+var rewrites = spdiff.findLargestCommonRewrites(changeset);
+console.log("done with num results:" + rewrites.length);
+if(rewrites) {
+var wroteFirst = false;
+rewrites.forEach(function(rewrite) {
+try {
+if(wroteFirst) {
+	return;
+}
+var ppLHS = spdiff.jsParser.prettyPrint(rewrite.lhs).code;
+var ppRHS = spdiff.jsParser.prettyPrint(rewrite.rhs).code;
+var diff = "<pre><code class=\"diff\">@@ @@\n";
+diff += "- " + ppLHS + "\n";
+diff += "+ " + ppRHS + "\n";
+diff += "</code></pre>"
+outputDiff.innerHTML += diff;
+wroteFirst = true;
+} catch(err) {
+// console.log("failed to conv: " + printRewrite(rewrite));
+}
+});
+}
+}
+		</script>
 
 
 		<!--[if lt IE 9]>
@@ -136,11 +180,11 @@
 					</section>
 					<section>
 						<h3>jQuery &lt; 1.8</h3>
-						<pre><code id="code1" data-trim contenteditable>
+						<pre><code class="javascript" data-trim contenteditable>
 $("a.foo").live("click", someFun)
 						</code></pre>
 						<h3>...upgraded</h3>
-						<pre><code data-trim contenteditable>
+						<pre><code class="javascript" data-trim contenteditable>
 								$(document).on("click", "a.foo", someFun)</code></pre>
 						<p>But that just takes care of <em>one location</em></p>
 					</section>
@@ -177,19 +221,231 @@ $("a.foo").die("click")
 				<section>
 					<section>
 						<h3>Coccinelle</h3>
+						<img src="images/cocci.jpg" />
+						<br />
+						<small>(<a href="http://coccinelle.lip6.fr/">website</a>)</small>
 					</section>
 					<section>
 						<h2>Collateral evolution</h2>
 						<img style="border: none; background: transparent;" src="collateral-evol.svg" />
 					</section>
 					<section>
-						<h3>Semantic patches</h3>
+						<h3>Semantic patches (SmPL)</h3>
+						<p>A "WYSIWYG" patch language.</p>
+					</section>
+					<section>
+						<h1>???</h1>
+						<video autoplay loop>
+							<source src="images/idontgetit.webm">
+						</video>
+					</section>
+
+					<section>
+						<h3>Abstract this patch</h3>
+						<pre><code class="diff">
+--- /old/path.js
++++ /new/path.js
+@@ -1, 1 +1, 1 @@
+- $("a.foo").live("click", someFun)
++ $(document).on("click", "a.foo", someFun)
+</code></pre>
+						<h3>To (SmPL) semantic patch</h3>
+						<pre><code class="diff">
+@@
+  string X0;
+  expression X1;
+@@
+- $(X0).live("click", X1)
++ $(document).on("click", X0, X1)
+</code></pre>
+					</section>
+					<section>
+						<pre><code class="diff">
+@@
+  string X0;
+  expression X1;
+@@
+- $(X0).live("click", X1)
++ $(document).on("click", X0, X1)
+</code></pre>
+						<ul>
+							<li>Abstraction of parts of code (metavariables)</li>
+							<li>Not sensitive to formatting/spaces (parses code)</li>
+							<li>Looks like the code that will change</li>
+						</ul>
+					</section>
+					<section>
+						<img src="images/happydoge.png"/>
+					</section>
+
+					<section>
+						<h3>Issues...</h3>
+						<ul>
+							<li>SmPL only targets C code (it was written to target Linux device drivers)</li>
+							<li>SmPL patches can be tricky to get right</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h3>spdiff(.js)</h3>
+					</section>
+					<section>
+						<h2>What is spdiff?</h2>
+						<p>spdiff is a tool that finds <em>common changes</em> in changed
+								C code and presents the common changes in a <em>compact</em> manner
+								using SmPL</p>
+							<p>Originates in the Coccinelle project.</p>
+					</section>
+
+					<section>
+						<h3>spdiff.js</h3>
+						<p>A JavaScript-port of spdiff that targets JavaScript programs</p>
+					</section>
+					<section>
+						<h3>spdiff approach</h3>
+						<img style="border: none; background: transparent;" src="spdiff-idea.svg" />
+						<p>Express <em>largest common</em> changes using SmPL</p>
+					</section>
+
+					<section>
+						Suppose
+<pre><code class="nohighlight">
+> spdiff [[p1-old.js, p1-new.js],
+          [p2-old.js, p2-new.js],
+          [p3-old.js, p3-new.js]] = common.smpl
+
+</code></pre>
+							Then maybe
+						<pre><code class="nohighlight">
+> apply common.smpl p1-old.js = p1-almost-new.js
+> apply common.smpl p2-old.js = p2-new.js
+> apply common.smpl p3-old.js = p3-nearly-new.js
+						</code></pre>
 
 					</section>
 
+					<section>
+						<h3>jQuery example</h3>
+						<div style="display: block; min-width: 600px; float: left;">
+							<pre><code class="javascript" id="old1" data-trim contenteditable>
+$("a.foo").live("click", someFun)</code></pre>
+						</div>
+						<div style="display: block; min-width: 600px; float: right;">
+							<pre><code class="javascript" id="new1" data-trim contenteditable>
+$(document).on("click", "a.foo", someFun)</code></pre>
+						</div>
+						<div style="display: block; min-width: 650px; float: left;">
+							<pre><code class="javascript" id="old2" data-trim contenteditable>
+$("otherselector").live("click", function() {
+  console.log("hi");
+})</code></pre>
+						</div>
+						<div style="display: block; min-width: 650px; float: right;">
+							<pre><code class="javascript" id="new2" data-trim contenteditable>
+$(document).on("click", "otherselector",
+  function() {
+    console.log("hi");
+  })</code></pre>
+						</div>
+						<div style="clear: both;"></div>
+						<button type="button" onclick="spdiffEx(1, 2)">run spdiff</button>
+						<div id="resultEx1"></div>
+					</section>
+
+					<!-- <section>
+						<img style="border: none; background: transparent;" width="80" src="images/ember.png"/>
+						<h3>Ember</h3>
+					</section> -->
+
+					<section>
+						<img style="border: none; background: transparent;" width="80" src="images/angularjs.png"/>
+						<h3>AngularJS 1.3 -> 1.4</h3>
+						<small>(No! We are not doing 1.x -> 2.0 today)</small>
+						<blockquote>Due to c8700f04, there is no need to call $scope.$apply or $scope.$digest inside of a animation promise callback anymore since the promise is resolved within a digest automatically. (Not to worry, any extra digests will not be run unless the promise is used.)
+						</blockquote>
+					</section>
+					<section>
+						<div style="display: block; min-width: 600px; float: left;">
+							<pre><code class="javascript" id="old3" data-trim contenteditable>
+$animate.enter(element).then(function() {
+  $scope.$apply(function() {
+    $scope.explode = true;
+  });
+});</code></pre>
+						</div>
+						<div style="display: block; min-width: 600px; float: right;">
+							<pre><code class="javascript" id="new3" data-trim contenteditable>
+$animate.enter(element).then(function() {
+  $scope.explode = true;
+});</code></pre>
+						</div>
+						<div style="display: block; min-width: 650px; float: left;">
+							<pre><code class="javascript" id="old4" data-trim contenteditable>
+$animate.enter(element).then(function() {
+  $scope.$apply(function() {
+    $scope.someprop = 42;
+  });
+});</code></pre>
+						</div>
+						<div style="display: block; min-width: 650px; float: right;">
+							<pre><code class="javascript" id="new4" data-trim contenteditable>
+$animate.enter(element).then(function() {
+  $scope.someprop = 42;
+});</code></pre>
+						</div>
+						<div style="clear: both;"></div>
+						<button type="button" onclick="spdiffEx(3, 4)">run spdiff</button>
+						<div id="resultEx3"></div>
+
+					</section>
+
+					<section>
+						<img style="border: none; background: transparent;" width="80" src="images/react.svg"/>
+						<h3>React </h3>
+					</section>
+
+					<section>
+						<h3>The lesson is...</h3>
+					</section>
+
+					<section>
+						<h3>To library maintainers:</h3>
+						<blockquote>Along with usual update guides, provide a SmPL patch
+							 that describes the update of usages.</blockquote>
+						<ul>
+							<li>It's more descriptive of impact on library-using code</li>
+							<li>It's directly applicable to users (*)</li>
+						</ul>
+					</section>
 
 				</section>
 
+				<section>
+					<section>
+						<h3>The future</h3>
+					</section>
+					<section> <!-- the future -->
+						<h3>TODOs</h3>
+						<ul>
+							<li>make it as fast as spdiff</li>
+							<li>proper cmd-line tool</li>
+							<li>extend parser...
+								<ul>
+									<li>improve pretty-printing</li>
+									<li>support JS embedded in HTML</li>
+								</ul>
+							</li>
+							<li>documentation</li>
+							<li>more powerful SmPL constructs</li>
+							<li>integrate in Github PR viewer</li>
+							<li>extend to more than JS?</li>
+						</ul>
+				</section>
+				<section>
+					Join the fun: <a href="https://github.com/jespera/spdiff.js">github/jespera/spdiff.js</a>
+			</section>
 			</div>
 
 		</div>
