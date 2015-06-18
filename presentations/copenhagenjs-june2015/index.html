@@ -267,6 +267,7 @@ $("a.foo").die("click")
 @@
 - $(X0).live("click", X1)
 + $(document).on("click", X0, X1)
+
 </code></pre>
 						<ul>
 							<li>Abstraction of parts of code (metavariables)</li>
@@ -275,6 +276,7 @@ $("a.foo").die("click")
 						</ul>
 					</section>
 					<section>
+						<h4>All good then...?</h4>
 						<img src="images/happydoge.png"/>
 					</section>
 
@@ -317,7 +319,7 @@ $("a.foo").die("click")
           [p3-old.js, p3-new.js]] = common.smpl
 
 </code></pre>
-							Then maybe
+							Then probably
 						<pre><code class="nohighlight">
 > apply common.smpl p1-old.js = p1-almost-new.js
 > apply common.smpl p2-old.js = p2-new.js
@@ -325,6 +327,30 @@ $("a.foo").die("click")
 						</code></pre>
 
 					</section>
+
+					<section>
+						<h3>Blank example</h3>
+						<div style="display: block; min-width: 600px; float: left;">
+							<pre><code class="javascript" id="old5" data-trim contenteditable>
+</code></pre>
+						</div>
+						<div style="display: block; min-width: 600px; float: right;">
+							<pre><code class="javascript" id="new5" data-trim contenteditable>
+</code></pre>
+						</div>
+						<div style="display: block; min-width: 650px; float: left;">
+							<pre><code class="javascript" id="old6" data-trim contenteditable>
+</code></pre>
+						</div>
+						<div style="display: block; min-width: 650px; float: right;">
+							<pre><code class="javascript" id="new6" data-trim contenteditable>
+</code></pre>
+						</div>
+						<div style="clear: both;"></div>
+						<button type="button" onclick="spdiffEx(5, 6)">run spdiff</button>
+						<div id="resultEx5"></div>
+					</section>
+
 
 					<section>
 						<h3>jQuery example</h3>
@@ -417,6 +443,13 @@ $animate.enter(element).then(function() {
 						</ul>
 					</section>
 
+					<section>
+						<h3>To library users</h3>
+						<blockquote>
+							Share your SmPL patches for API usage updates.
+						</blockquote>
+					</section>
+
 				</section>
 
 				<section>
@@ -435,7 +468,10 @@ $animate.enter(element).then(function() {
 								</ul>
 							</li>
 							<li>documentation</li>
-							<li>more powerful SmPL constructs</li>
+							<li>more powerful SmPL constructs
+							<ul>
+								<li>In particular the "..."-operator</li>
+							</li>
 							<li>integrate in Github PR viewer</li>
 							<li>extend to more than JS?</li>
 						</ul>
