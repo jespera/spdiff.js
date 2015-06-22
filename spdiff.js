@@ -781,10 +781,6 @@ function convertToAST(term) {
 
 var spdiff = {};
 
-spdiff.applyRewrite = function(rewrite, srcAst) {
-  return convertToAST(applyRewrite(rewrite, convertToTerm(srcAst)));
-};
-
 spdiff.findLargestCommonRewrites = function(changeset) {
   function convert(change) {
     var oldAST = jsParser.parse(change.oldTerm);
