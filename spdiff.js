@@ -574,9 +574,9 @@ function getSubTerms(term) {
   return subterms;
 }
 
-function getCommonPatterns(lhss) {
+function getCommonPatterns(terms) {
     // a list of lists of subterms
-  var subtermLists = lhss.map(getSubTerms);
+  var subtermLists = terms.map(getSubTerms);
   var common = [];
   function loop(curPat, subtermListsTail) {
     if(subtermListsTail.length === 0) {
