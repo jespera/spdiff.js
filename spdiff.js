@@ -640,7 +640,7 @@ function getMergeDiffs(changeset) {
   var mergedChanges = [];
 
   function mergeFold(curMerge, otherDiffs) {
-    if(otherDiffs.length == 0) {
+    if(otherDiffs.length === 0) {
           // check safety
       var newMergeSafe = changeset.every(function(change) {
         return isSafe(curMerge, change.oldTerm, change.newTerm);
